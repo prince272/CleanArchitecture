@@ -1,5 +1,4 @@
-﻿using CleanArchitecture.Core.Entities.Abstractions;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Core.Entities.Abstractions
+namespace CleanArchitecture.Core
 {
     public interface IEntity
     {

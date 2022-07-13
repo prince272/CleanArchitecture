@@ -1,4 +1,6 @@
-﻿using CleanArchitecture.Core.Entities.Abstractions;
+﻿using CleanArchitecture.Core;
+using CleanArchitecture.Core.Helpers;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -13,8 +15,7 @@ namespace CleanArchitecture.Data
     {
         public static ModelBuilder ApplyEntitiesFromAssembly(this ModelBuilder modelBuilder, Assembly assembly, Func<Type, bool>? predicate = null)
         {
-
-            foreach (var type in assembly.GetConstructibleTypes().OrderBy(t => t.FullName))
+            foreach (var type in TypeHelper.GetConstructibleTypes(assembly).OrderBy(t => t.FullName))
             {
                 // Only accept types that contain a parameterless constructor, are not abstract and satisfy a predicate if it was used.
                 if (type.GetConstructor(Type.EmptyTypes) == null
@@ -38,18 +39,23 @@ namespace CleanArchitecture.Data
             return modelBuilder;
         }
 
-        public static IEnumerable<TypeInfo> GetConstructibleTypes(this Assembly assembly)
-            => assembly.GetLoadableDefinedTypes().Where(t => !t.IsAbstract && !t.IsGenericTypeDefinition);
-
-        public static IEnumerable<TypeInfo> GetLoadableDefinedTypes(this Assembly assembly)
+        public static void ValidateEntitiesFromAssembly(this DbContext dbContext, Assembly assembly)
         {
-            try
+            var modifiedEntries = dbContext.ChangeTracker.Entries().Where(ee => (ee.State == EntityState.Added || ee.State == EntityState.Modified)).ToArray();
+            var validatorTypes = TypeHelper.GetConstructibleTypes(assembly)
+                 .Where(t => TypeHelper.IsAssignableToGenericType(t, typeof(FluentValidation.AbstractValidator<>)));
+
+            foreach (var modifiedEntry in modifiedEntries)
             {
-                return assembly.DefinedTypes;
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.Where(t => t != null).Select(IntrospectionExtensions.GetTypeInfo!);
+                var entity = modifiedEntry.Entity;
+                var validatorType = validatorTypes.FirstOrDefault(t => t.BaseType != null && t.BaseType.GetGenericArguments()[0] == entity.GetType());
+
+                if (validatorType != null)
+                {
+                    var validator = (IValidator)Activator.CreateInstance(validatorType)!;
+                    var validationResult = validator.Validate(new ValidationContext<object>(entity));
+                    if (!validationResult.IsValid) throw new ValidationException(validationResult.Errors);
+                }
             }
         }
     }
