@@ -14,7 +14,7 @@
 
         void Remove<TEntity>(params TEntity[] entities) where TEntity : class, IEntity;
 
-        Task SaveChangesAsync();
+        Task CompleteAsync();
 
         void Update<TEntity>(IEnumerable<TEntity> entities) where TEntity : class, IEntity;
 

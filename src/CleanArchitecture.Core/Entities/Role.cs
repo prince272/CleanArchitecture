@@ -9,13 +9,23 @@ namespace CleanArchitecture.Core.Entities
 {
     public class Role : IdentityRole<long>, IEntity
     {
+        public Role()
+        {
+        }
+
+        public Role(string roleName) : base(roleName)
+        {
+        }
+
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 
-    public class UserRole : IdentityUserRole<long>, IEntity
+    public static class RoleNames
     {
-        public virtual User User { get; set; } = null!;
+        public const string Admin = nameof(Admin);
 
-        public virtual Role Role { get; set; } = null!;
+        public const string Memeber = nameof(Memeber);
+
+        public static IEnumerable<string> All => new string[] { Admin, Memeber };
     }
 }

@@ -10,5 +10,11 @@ namespace CleanArchitecture.Core.Validators
 {
     public class UserValidator : AbstractValidator<User>
     {
+        public UserValidator()
+        {
+            RuleFor(entity => entity.FirstName).NotEmpty();
+            RuleFor(entity => entity.LastName).NotEmpty();
+            RuleFor(entity => entity.Created).NotEmpty();
+        }
     }
 }

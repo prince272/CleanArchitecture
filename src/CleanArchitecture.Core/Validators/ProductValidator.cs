@@ -12,8 +12,8 @@ namespace CleanArchitecture.Core.Validators
     {
         public ProductValidator()
         {
-            RuleFor(p => p.Name).NotEmpty();
-            RuleFor(p => p.Price).InclusiveBetween(decimal.Zero, decimal.MaxValue);
+            RuleFor(entity => entity.Name).NotEmpty();
+            RuleFor(entity => entity.Price).InclusiveBetween(decimal.Zero, decimal.MaxValue);
         }
     }
 }

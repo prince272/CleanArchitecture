@@ -10,6 +10,12 @@ namespace CleanArchitecture.Core.Entities
 {
     public class User : IdentityUser<long>, IEntity
     {
+        public string FirstName { get; set; } = null!;
+
+        public string LastName { get; set; } = null!;
+
+        public DateTimeOffset Created { get; set; }
+
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }
