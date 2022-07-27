@@ -1,4 +1,4 @@
-﻿using CleanArchitecture.Infrastructure.Identity;
+﻿using CleanArchitecture.Server.Extensions.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -7,14 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Infrastructure
+namespace CleanArchitecture.Server.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IdentityBuilder AddBearerTokenManager(this IdentityBuilder identityBuilder, Action<BearerTokenOptions> configure)
+        public static IdentityBuilder AddAuthenticationManager(this IdentityBuilder identityBuilder, Action<AuthenticationOptions> configure)
         {
             identityBuilder.Services.Configure(configure);
-            identityBuilder.Services.AddTransient<BearerTokenManager>();
+            identityBuilder.Services.AddTransient<AuthenticationManager>();
             return identityBuilder;
         }
     }

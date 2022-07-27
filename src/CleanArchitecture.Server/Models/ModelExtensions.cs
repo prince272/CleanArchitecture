@@ -1,7 +1,8 @@
-﻿using CleanArchitecture.Core.Helpers;
-using CleanArchitecture.Infrastructure.Identity;
+﻿using CleanArchitecture.Core.Entities;
+using CleanArchitecture.Core.Helpers;
 using FluentValidation;
 using Humanizer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -9,38 +10,39 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Server.Utilities
+namespace CleanArchitecture.Server.Models
 {
-    public static class RuleBuilderExtensions
+    public static class ModelExtensions
     {
-        public static IRuleBuilder<T, string> Username<T>(this IRuleBuilder<T, string> ruleBuilder, UserManager userManager)
+        public static IRuleBuilder<T, string> Username<T>(this IRuleBuilder<T, string> ruleBuilder)
         {
-            ruleBuilder.CustomAsync(async (value, context, cancellationToken) =>
+            ruleBuilder.Custom((value, context) =>
             {
                 var contactType = ContactHelper.Switch(value);
+
                 switch (contactType)
                 {
                     case ContactType.EmailAddress:
                         {
-                            if (!ContactHelper.TryValidateEmailAddress(value, out var _))
+                            if (!ContactHelper.TryValidateEmailAddress(value, out _))
+                            {
                                 context.AddFailure($"'{contactType.Humanize()}' is not valid.");
-
-                            if (await userManager.Users.AnyAsync(user => user.Email == value, cancellationToken))
-                                context.AddFailure($"'{contactType.Humanize()}' is not registered.");
+                                return;
+                            }
                         }
                         break;
 
                     case ContactType.PhoneNumber:
                         {
-                            if (!ContactHelper.TryValidatePhoneNumber(value, out var _))
+                            if (!ContactHelper.TryValidatePhoneNumber(value, out _))
+                            {
                                 context.AddFailure($"'{contactType.Humanize()}' is not valid.");
-
-                            if (await userManager.Users.AnyAsync(user => user.PhoneNumber == value, cancellationToken))
-                                context.AddFailure($"'{contactType.Humanize()}' is not registered.");
+                                return;
+                            }
                         }
                         break;
 
-                    default: context.AddFailure("'Username' is not valid."); break;
+                    default: throw new InvalidOperationException();
                 }
             });
             return ruleBuilder;

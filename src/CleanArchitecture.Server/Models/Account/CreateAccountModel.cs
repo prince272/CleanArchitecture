@@ -1,7 +1,7 @@
 ﻿using CleanArchitecture.Core;
-using CleanArchitecture.Infrastructure.Identity;
-using CleanArchitecture.Server.Utilities;
+using CleanArchitecture.Core.Entities;
 using FluentValidation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitecture.Server.Models.Account
@@ -19,11 +19,13 @@ namespace CleanArchitecture.Server.Models.Account
 
     public class CreateAccountValidator : AbstractValidator<CreateAccountModel>
     {
-        public CreateAccountValidator()
+        public CreateAccountValidator(UserManager<User> userManager)
         {
+            if (userManager == null) throw new ArgumentNullException(nameof(userManager));
+
             RuleFor(model => model.FirstName).NotEmpty();
             RuleFor(model => model.LastName).NotEmpty();
-            RuleFor(model => model.Username).NotEmpty();
+            RuleFor(model => model.Username).NotEmpty().Username();
             RuleFor(model => model.Password).NotEmpty().Password();
         }
     }

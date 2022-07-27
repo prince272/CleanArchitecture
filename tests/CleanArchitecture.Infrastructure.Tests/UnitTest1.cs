@@ -1,4 +1,5 @@
 using CleanArchitecture.Core.Entities;
+using CleanArchitecture.Core.Helpers;
 using CleanArchitecture.Infrastructure.Data;
 
 namespace CleanArchitecture.Infrastructure.Tests
@@ -8,10 +9,9 @@ namespace CleanArchitecture.Infrastructure.Tests
         [Fact]
         public void Test1()
         {
-            var dbContextFactory = new AppDbContextFactory();
-            var dbContext = dbContextFactory.CreateDbContext(new string[0])!;
-            dbContext.Add(new Product() { Name = "Core i9 Laptop" });
-            dbContext.SaveChanges();
+            var ss = new Uri("https://example.com");
+            var ssss = ExpressionHelper.GetPropertyName(() => ss.AbsolutePath);
+            Assert.Equal("ss.AbsolutePath", ssss);
         }
     }
 }

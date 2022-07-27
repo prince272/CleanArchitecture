@@ -1,8 +1,6 @@
 using CleanArchitecture.Core;
 using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Infrastructure;
 using CleanArchitecture.Infrastructure.Data;
-using CleanArchitecture.Infrastructure.Identity;
 using CleanArchitecture.Server;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,6 +16,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Humanizer;
 using FluentValidation;
+using CleanArchitecture.Server.Extensions.Identity;
+using CleanArchitecture.Server.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,7 +32,10 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // Add database services.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+
+    }));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -72,16 +75,16 @@ builder.Services.AddIdentity<User, Role>(options =>
     options.ClaimsIdentity.EmailClaimType = ClaimTypes.Email;
     options.ClaimsIdentity.SecurityStampClaimType = ClaimTypes.SerialNumber;
 })
-    .AddUserManager<UserManager>()
-    .AddRoleManager<RoleManager>()
-    .AddBearerTokenManager(options =>
+    .AddAuthenticationManager(options =>
     {
         options.Issuer = builder.Configuration["Authentication:Default:Issuer"];
-        options.Audience = builder.Configuration["Authentication:Default:Issuer"];
+        options.Audience = builder.Configuration["Authentication:Default:Audience"];
         options.Secret = builder.Configuration["Authentication:Default:Secret"];
 
-        options.AccessTokenExpiresTimeSpan = TimeSpan.FromMinutes(1);
-        options.RefeshTokenExpiresTimeSpan = TimeSpan.FromMinutes(5);
+        options.AccessTokenTimeSpan = TimeSpan.FromMinutes(1);
+        options.RefeshTokenTimeSpan = TimeSpan.FromMinutes(5);
+
+        options.MultipleAuthentication = true;
 
     })
     .AddEntityFrameworkStores<AppDbContext>()
@@ -108,6 +111,31 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true, // verify signature to avoid tampering.
             ValidateLifetime = true, // validate the expiration.
             ClockSkew = TimeSpan.Zero // tolerance for the expiration date.
+
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger(nameof(JwtBearerEvents));
+                logger.LogError($"Authentication failed {context.Exception}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var authenticationManager =
+                    context.HttpContext.RequestServices.GetRequiredService<AuthenticationManager>();
+                return authenticationManager.ValidateAsync(context);
+            },
+            OnMessageReceived = context => { return Task.CompletedTask; },
+            OnChallenge = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger(nameof(JwtBearerEvents));
+                logger.LogError($"OnChallenge error {context.Error}, {context.ErrorDescription}");
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -118,17 +146,20 @@ builder.Services.AddRouting(options =>
     options.LowercaseUrls = true;
     options.LowercaseQueryStrings = false;
 });
+
+builder.Services.AddAntiforgery(options => options.HeaderName = AuthenticationManager.XSRF_TOKEN_KEY);
+
+
 builder.Services.AddControllers(options =>
 {
-
     // Form field is required even if not defined so
     // source: https://stackoverflow.com/questions/72060349/form-field-is-required-even-if-not-defined-so
     options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
 })
     .AddJsonOptions(options =>
 {
-    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
@@ -139,10 +170,50 @@ builder.Services.AddFluentValidation(options =>
     ValidatorOptions.Global.DefaultClassLevelCascadeMode = CascadeMode.Continue;
     ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop;
 
-    options.AutomaticValidationEnabled = false;
+    ValidatorOptions.Global.DisplayNameResolver = (type, memberInfo, expression) =>
+    {
+        string? RelovePropertyName()
+        {
+            if (expression != null)
+            {
+                var chain = FluentValidation.Internal.PropertyChain.FromExpression(expression);
+                if (chain.Count > 0) return chain.ToString();
+            }
+
+            if (memberInfo != null)
+            {
+                return memberInfo.Name;
+            }
+
+            return null;
+        }
+
+        return RelovePropertyName()?.Humanize();
+    };
+    ValidatorOptions.Global.PropertyNameResolver = (type, memberInfo, expression) =>
+    {
+        string? RelovePropertyName()
+        {
+            if (expression != null)
+            {
+                var chain = FluentValidation.Internal.PropertyChain.FromExpression(expression);
+                if (chain.Count > 0) return chain.ToString();
+            }
+
+            if (memberInfo != null)
+            {
+                return memberInfo.Name;
+            }
+
+            return null;
+        }
+
+        var propertyName = RelovePropertyName();
+        return propertyName != null ? JsonNamingPolicy.CamelCase.ConvertName(propertyName) : null;
+    };
+
     options.DisableDataAnnotationsValidation = true;
     options.RegisterValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -150,6 +221,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseExceptionHandler("/error/500");
+app.UseStatusCodePagesWithReExecute("/error/{0}");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

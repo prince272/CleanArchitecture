@@ -10,12 +10,10 @@ namespace CleanArchitecture.Server.Utilities
 {
     public static class Extensions
     {
-        public static ModelStateDictionary Include(this ModelStateDictionary modelState, IEnumerable<ValidationFailure> errors)
+        public static ModelStateDictionary With(this ModelStateDictionary modelState, ValidationResult result)
         {
-            foreach (var error in errors)
-            {
+            foreach (var error in result.Errors)
                 modelState.AddModelError(error.PropertyName, error.ErrorMessage);
-            }
 
             return modelState;
         }
