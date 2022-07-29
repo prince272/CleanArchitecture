@@ -15,9 +15,9 @@ namespace CleanArchitecture.Core.Entities
 
         public string RefreshTokenHash { get; set; } = null!;
 
-        public DateTimeOffset AccessTokenExpires { get; set; }
+        public DateTimeOffset AccessTokenExpiresOn { get; set; }
 
-        public DateTimeOffset RefreshTokenExpires { get; set; }
+        public DateTimeOffset RefreshTokenExpiresOn { get; set; }
 
         public long UserId { get; set; }
 

@@ -18,6 +18,10 @@ using Humanizer;
 using FluentValidation;
 using CleanArchitecture.Server.Extensions.Identity;
 using CleanArchitecture.Server.Extensions;
+using CleanArchitecture.Server.Extensions.AnonymousId;
+using CleanArchitecture.Server.Extensions.Hosting;
+using CleanArchitecture.Infrastructure.Extensions.EmailSender;
+using CleanArchitecture.Infrastructure.Extensions.SmsSender;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,12 +81,12 @@ builder.Services.AddIdentity<User, Role>(options =>
 })
     .AddAuthenticationManager(options =>
     {
-        options.Issuer = builder.Configuration["Authentication:Default:Issuer"];
-        options.Audience = builder.Configuration["Authentication:Default:Audience"];
-        options.Secret = builder.Configuration["Authentication:Default:Secret"];
+        options.Issuer = builder.Configuration.GetValue<string>("Authentication:Default:Issuer");
+        options.Audience = builder.Configuration.GetValue<string>("Authentication:Default:Audience");
+        options.Secret = builder.Configuration.GetValue<string>("Authentication:Default:Secret");
 
-        options.AccessTokenTimeSpan = TimeSpan.FromMinutes(1);
-        options.RefeshTokenTimeSpan = TimeSpan.FromMinutes(5);
+        options.AccessTokenExpiresIn = TimeSpan.FromMinutes(10);
+        options.RefeshTokenExpiresIn = TimeSpan.FromMinutes(25);
 
         options.MultipleAuthentication = true;
 
@@ -103,11 +107,11 @@ builder.Services.AddAuthentication(options =>
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidIssuer = builder.Configuration["Authentication:Default:Issuer"], // site that makes the token.
+            ValidIssuer = builder.Configuration.GetValue<string>("Authentication:Default:Issuer"), // site that makes the token.
             ValidateIssuer = true,
-            ValidAudience = builder.Configuration["Authentication:Default:Audience"], // site that consumes the token.
+            ValidAudience = builder.Configuration.GetValue<string>("Authentication:Default:Audience"), // site that consumes the token.
             ValidateAudience = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Authentication:Default:Secret"])),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("Authentication:Default:Secret"))),
             ValidateIssuerSigningKey = true, // verify signature to avoid tampering.
             ValidateLifetime = true, // validate the expiration.
             ClockSkew = TimeSpan.Zero // tolerance for the expiration date.
@@ -137,7 +141,23 @@ builder.Services.AddAuthentication(options =>
                 return Task.CompletedTask;
             }
         };
+    })
+    .AddGoogle("google", options =>
+    {
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+        options.ClientId = builder.Configuration.GetValue<string>("Authentication:Google:ClientId");
+        options.ClientSecret = builder.Configuration.GetValue<string>("Authentication:Google:ClientSecret");
+        options.AccessDeniedPath = "/account/access-denied";
     });
+
+builder.Services.AddAnonymous(options => {
+    options.HttpOnly = true;
+    options.SameSite = SameSiteMode.None;
+    options.Expiration = TimeSpan.FromDays(30);
+    options.SecurePolicy = builder.Environment.IsDevelopment()
+    ? CookieSecurePolicy.SameAsRequest
+    : CookieSecurePolicy.Always;
+});
 
 builder.Services.AddAuthorization();
 
@@ -147,8 +167,35 @@ builder.Services.AddRouting(options =>
     options.LowercaseQueryStrings = false;
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(defaultPolicy =>
+    {
+        defaultPolicy
+        .WithOrigins(builder.Configuration.GetSection("ClientUrls").Get<string[]>())
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials()
+        .WithExposedHeaders("Content-Disposition")
+        .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+    });
+});
+
 builder.Services.AddAntiforgery(options => options.HeaderName = AuthenticationManager.XSRF_TOKEN_KEY);
 
+builder.Services.AddMailKitEmailSender(options =>
+{
+    options.Port = builder.Configuration.GetValue<int>("Mailing:Port");
+    options.Hostname = builder.Configuration.GetValue<string>("Mailing:Hostname");
+    options.UseServerCertificateValidation = builder.Configuration.GetValue<bool>("Mailing:UseServerCertificateValidation");
+    options.SecureSocketId = builder.Configuration.GetValue<int>("Mailing:SecureSocketId");
+});
+
+builder.Services.AddSmsSender(options => { });
+
+builder.Services.AddClientServer(options => {
+    options.ClientUrls = builder.Configuration.GetSection("ClientUrls").Get<string[]>(); 
+});
 
 builder.Services.AddControllers(options =>
 {
@@ -190,27 +237,6 @@ builder.Services.AddFluentValidation(options =>
 
         return RelovePropertyName()?.Humanize();
     };
-    ValidatorOptions.Global.PropertyNameResolver = (type, memberInfo, expression) =>
-    {
-        string? RelovePropertyName()
-        {
-            if (expression != null)
-            {
-                var chain = FluentValidation.Internal.PropertyChain.FromExpression(expression);
-                if (chain.Count > 0) return chain.ToString();
-            }
-
-            if (memberInfo != null)
-            {
-                return memberInfo.Name;
-            }
-
-            return null;
-        }
-
-        var propertyName = RelovePropertyName();
-        return propertyName != null ? JsonNamingPolicy.CamelCase.ConvertName(propertyName) : null;
-    };
 
     options.DisableDataAnnotationsValidation = true;
     options.RegisterValidatorsFromAssembly(Assembly.GetExecutingAssembly());
@@ -219,6 +245,9 @@ builder.Services.AddFluentValidation(options =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddRazorViewRenderer((options) => {
+    options.RootPathFormat = "/Views/Templates/{0}";
+});
 
 var app = builder.Build();
 
@@ -234,6 +263,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAnonymous();
 app.UseAuthentication();
 app.UseAuthorization();
 

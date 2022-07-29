@@ -14,9 +14,9 @@ namespace CleanArchitecture.Server.Extensions.Identity
 
         public string Audience { set; get; } = null!;
 
-        public TimeSpan AccessTokenTimeSpan { set; get; }
+        public TimeSpan AccessTokenExpiresIn { set; get; }
 
-        public TimeSpan RefeshTokenTimeSpan { set; get; }
+        public TimeSpan RefeshTokenExpiresIn { set; get; }
 
         public bool MultipleAuthentication { set; get; }
     }

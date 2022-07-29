@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace CleanArchitecture.Server.Controllers
 {
@@ -49,7 +52,12 @@ namespace CleanArchitecture.Server.Controllers
         string? type = null,
         IDictionary<string, object?>? extensions = null)
         {
-            var problemDetails = new ValidationProblemDetails(errors)
+            var jsonOptions = HttpContext.RequestServices.GetRequiredService<IOptions<JsonOptions>>()?.Value;
+
+            string? RelovePropertyNamingPolicy(string propertyName)
+                => jsonOptions?.JsonSerializerOptions.DictionaryKeyPolicy?.ConvertName(propertyName);
+
+            var problemDetails = new ValidationProblemDetails(errors.ToDictionary(k => RelovePropertyNamingPolicy(k.Key) ?? k.Key, k => k.Value))
             {
                 Detail = detail,
                 Instance = instance,

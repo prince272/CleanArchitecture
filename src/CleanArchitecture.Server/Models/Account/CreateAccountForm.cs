@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitecture.Server.Models.Account
 {
-    public class CreateAccountModel
+    public class CreateAccountForm
     {
         public string FirstName { get; set; } = null!;
 
@@ -17,7 +17,7 @@ namespace CleanArchitecture.Server.Models.Account
         public string Password { get; set; } = null!;
     }
 
-    public class CreateAccountValidator : AbstractValidator<CreateAccountModel>
+    public class CreateAccountValidator : AbstractValidator<CreateAccountForm>
     {
         public CreateAccountValidator(UserManager<User> userManager)
         {

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace CleanArchitecture.Server.Models.Account
 {
-    public class CreateAccountTokenModel
+    public class CreateAccountTokenForm
     {
         public string Username { get; set; } = null!;
 
@@ -12,7 +12,7 @@ namespace CleanArchitecture.Server.Models.Account
     }
 
 
-    public class CreateAccountTokenValidator : AbstractValidator<CreateAccountTokenModel>
+    public class CreateAccountTokenValidator : AbstractValidator<CreateAccountTokenForm>
     {
         public CreateAccountTokenValidator(UserManager<User> userManager)
         {

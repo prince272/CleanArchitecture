@@ -1,6 +1,7 @@
 using CleanArchitecture.Core.Entities;
 using CleanArchitecture.Core.Helpers;
 using CleanArchitecture.Infrastructure.Data;
+using System.ComponentModel;
 
 namespace CleanArchitecture.Infrastructure.Tests
 {
@@ -9,9 +10,15 @@ namespace CleanArchitecture.Infrastructure.Tests
         [Fact]
         public void Test1()
         {
-            var ss = new Uri("https://example.com");
-            var ssss = ExpressionHelper.GetPropertyName(() => ss.AbsolutePath);
-            Assert.Equal("ss.AbsolutePath", ssss);
+
+            throw new InvalidOperationException($"Value '{ContactType.PhoneNumber}' of type '{nameof(ContactType)}' is not supported.");
+        }
+
+        public enum Type
+        {
+            A1,
+            B2,
+            C3
         }
     }
 }

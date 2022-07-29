@@ -1,0 +1,5 @@
+﻿@model (User User, IVerifyAccountForm Form, ContactType FormUsernameType)
+
+<h4>Hi @(Model.User.FirstName),</h4>
+
+<p>Kindly use this verification code <b>@(Model.Form.Code)</b> to verify your account.</p>

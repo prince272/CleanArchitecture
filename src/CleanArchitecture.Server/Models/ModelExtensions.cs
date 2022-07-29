@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,6 +15,11 @@ namespace CleanArchitecture.Server.Models
 {
     public static class ModelExtensions
     {
+        public static void Add(this IDictionary<string, string[]> errors, LambdaExpression expression, params string[] errorMessages)
+        {
+            errors.Add(ExpressionHelper.GetSubName(expression), errorMessages);
+        }
+
         public static IRuleBuilder<T, string> Username<T>(this IRuleBuilder<T, string> ruleBuilder)
         {
             ruleBuilder.Custom((value, context) =>
@@ -52,7 +58,7 @@ namespace CleanArchitecture.Server.Models
         // source: https://stackoverflow.com/questions/63864594/how-can-i-create-strong-passwords-with-fluentvalidation
         public static IRuleBuilder<T, string> Password<T>(this IRuleBuilder<T, string> ruleBuilder, int minimumLength = 6)
         {
-            var options = ruleBuilder.NotEmpty()
+            var options = ruleBuilder
                 .MinimumLength(minimumLength)
                 .Matches("[A-Z]").WithMessage("'{PropertyName}' must contain at least 1 upper case.")
                 .Matches("[a-z]").WithMessage("'{PropertyName}' must contain at least 1 lower case.")

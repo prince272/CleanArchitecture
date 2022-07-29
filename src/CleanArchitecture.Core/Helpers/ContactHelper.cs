@@ -12,7 +12,7 @@ namespace CleanArchitecture.Core.Helpers
         public static ContactType Switch(string rawValue)
         {
             if (string.IsNullOrWhiteSpace(rawValue))
-                throw new ArgumentException($"'{nameof(rawValue)}' cannot be null or whitespace.", nameof(rawValue));
+                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(rawValue));
 
             return Regex.IsMatch(rawValue.ToLowerInvariant(), "^[-+0-9() ]+$") ? ContactType.PhoneNumber : ContactType.EmailAddress;
         }
@@ -20,17 +20,15 @@ namespace CleanArchitecture.Core.Helpers
         public static PhoneNumbers.PhoneNumber ValidatePhoneNumber(string rawValue)
         {
             if (string.IsNullOrWhiteSpace(rawValue))
-                throw new ArgumentException($"'{nameof(rawValue)}' cannot be null or whitespace.", nameof(rawValue));
+                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(rawValue));
 
             var phoneNumberUtil = PhoneNumbers.PhoneNumberUtil.GetInstance();
-            var phoneNumberValue = phoneNumberUtil.Parse(rawValue, null);
+            var phoneNumberValue = phoneNumberUtil.ParseAndKeepRawInput(rawValue, null);
 
-            if (phoneNumberUtil.IsValidNumber(phoneNumberValue) && rawValue == $"+{phoneNumberValue.CountryCode}{phoneNumberValue.NationalNumber}")
-            {
+            if (phoneNumberUtil.IsValidNumber(phoneNumberValue))
                 return phoneNumberValue;
-            }
 
-            throw new FormatException($"The value '{rawValue}' is not valid.");
+            throw new FormatException($"Input '{rawValue}' was not recognized as a valid PhoneNumber.");
         }
 
         public static bool TryValidatePhoneNumber(string rawValue, out PhoneNumbers.PhoneNumber phoneNumber)
@@ -52,7 +50,7 @@ namespace CleanArchitecture.Core.Helpers
         public static System.Net.Mail.MailAddress ValidateEmailAddress(string rawValue)
         {
             if (string.IsNullOrWhiteSpace(rawValue))
-                throw new ArgumentException($"'{nameof(rawValue)}' cannot be null or whitespace.", nameof(rawValue));
+                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(rawValue));
 
             if (!rawValue.EndsWith("."))
             {
@@ -63,7 +61,7 @@ namespace CleanArchitecture.Core.Helpers
                 }
             }
 
-            throw new FormatException($"The value '{rawValue}' is not valid.");
+            throw new FormatException($"Input '{rawValue}' was not recognized as a valid MailAddress.");
         }
 
         public static bool TryValidateEmailAddress(string rawValue, out System.Net.Mail.MailAddress emailAddress)
