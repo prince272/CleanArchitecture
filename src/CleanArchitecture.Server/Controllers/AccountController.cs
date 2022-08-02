@@ -27,7 +27,7 @@ namespace CleanArchitecture.Server.Controllers
 {
     public class AccountController : ApiController
     {
-        private readonly AuthenticationTokenProvider _authTokenProvider;
+        private readonly AuthenticationTokenProvider _authenticationTokenProvider;
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Role> _roleManager;
         private readonly SignInManager<User> _signInManager;
@@ -38,7 +38,7 @@ namespace CleanArchitecture.Server.Controllers
         private readonly IClientServer _clientServer;
 
         public AccountController(
-            AuthenticationTokenProvider authTokenProvider,
+            AuthenticationTokenProvider authenticationTokenProvider,
             UserManager<User> userManager,
             RoleManager<Role> roleManager,
             SignInManager<User> signInManager,
@@ -48,7 +48,7 @@ namespace CleanArchitecture.Server.Controllers
             IViewRenderer viewRenderer,
             IClientServer clientServer)
         {
-            _authTokenProvider = authTokenProvider ?? throw new ArgumentNullException(nameof(authTokenProvider));
+            _authenticationTokenProvider = authenticationTokenProvider ?? throw new ArgumentNullException(nameof(authenticationTokenProvider));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
@@ -432,7 +432,7 @@ namespace CleanArchitecture.Server.Controllers
                 return ValidationProblem(errors);
             }
 
-            var token = await _authTokenProvider.GenerateTokenAsync(user);
+            var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
             return Ok(token);
         }
 
@@ -460,7 +460,7 @@ namespace CleanArchitecture.Server.Controllers
 
                         if (result.Succeeded)
                         {
-                            var token = await _authTokenProvider.GenerateTokenAsync(user);
+                            var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
                             return Ok(token);
                         }
                     }
@@ -495,7 +495,7 @@ namespace CleanArchitecture.Server.Controllers
 
                         if (result.Succeeded)
                         {
-                            var token = await _authTokenProvider.GenerateTokenAsync(user);
+                            var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
                             return Ok(token);
                         }
                     }
@@ -510,11 +510,11 @@ namespace CleanArchitecture.Server.Controllers
         {
             if (refreshToken == null) return ValidationProblem(title: $"'{nameof(refreshToken)}' is required.");
 
-            var token = await _authTokenProvider.FindTokenAsync(refreshToken);
+            var token = await _authenticationTokenProvider.FindTokenAsync(refreshToken);
             if (token == null)
                 return ValidationProblem(title: $"Invalid '{nameof(refreshToken)}'.");
 
-            var newToken = await _authTokenProvider.RenewTokenAsync(token);
+            var newToken = await _authenticationTokenProvider.RenewTokenAsync(token);
             return Ok(newToken);
         }
 
@@ -523,11 +523,11 @@ namespace CleanArchitecture.Server.Controllers
         {
             if (refreshToken == null) return ValidationProblem(title: $"'{nameof(refreshToken)}' is required.");
 
-            var bearerToken = await _authTokenProvider.FindTokenAsync(refreshToken);
+            var bearerToken = await _authenticationTokenProvider.FindTokenAsync(refreshToken);
             if (bearerToken == null)
                 return ValidationProblem(title: $"Invalid '{nameof(refreshToken)}'.");
 
-            await _authTokenProvider.RevokeTokenAsync(bearerToken);
+            await _authenticationTokenProvider.RevokeTokenAsync(bearerToken);
             return Ok();
         }
 

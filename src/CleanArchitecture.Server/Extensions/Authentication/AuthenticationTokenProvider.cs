@@ -50,7 +50,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             _antiforgeryOptions = antiforgeryOptions ?? throw new ArgumentNullException(nameof(antiforgery));
         }
 
-        public async Task<AuthenticationTokenObject> GenerateTokenAsync(User user)
+        public async Task<AuthenticationTokenData> GenerateTokenAsync(User user)
         {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
@@ -78,7 +78,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
             RegenerateAntiForgeryCookies(claims);
 
-            return new AuthenticationTokenObject
+            return new AuthenticationTokenData
             {
                 TokenType = TokenType,
 
@@ -90,24 +90,24 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             };
         }
 
-        public async Task<AuthenticationTokenObject> RenewTokenAsync(AuthenticationToken bearerToken)
+        public async Task<AuthenticationTokenData> RenewTokenAsync(AuthenticationToken token)
         {
-            if (bearerToken == null)
-                throw new ArgumentNullException(nameof(bearerToken));
+            if (token == null)
+                throw new ArgumentNullException(nameof(token));
 
-            await RemoveExpiredTokensByUserIdAsync(bearerToken.UserId);
+            await RemoveExpiredTokensByUserIdAsync(token.UserId);
 
             if (!_authenticationOptions.Value.MultipleAuthentication)
-                await RemoveTokensByUserIdAsync(bearerToken.UserId);
+                await RemoveTokensByUserIdAsync(token.UserId);
 
-            await RemoveTokensWithSameRefreshTokenAsync(bearerToken.RefreshTokenHash);
+            await RemoveTokensWithSameRefreshTokenAsync(token.RefreshTokenHash);
 
             var now = DateTimeOffset.UtcNow;
-            var (accessToken, claims) = await GenerateAccessTokenAsync(now, bearerToken.User);
+            var (accessToken, claims) = await GenerateAccessTokenAsync(now, token.User);
             var refreshToken = GenerateRefreshToken(now);
             _unitOfWork.Add(new AuthenticationToken
             {
-                UserId = bearerToken.UserId,
+                UserId = token.UserId,
 
                 AccessTokenHash = SecurityHelper.GenerateHash(accessToken),
                 RefreshTokenHash = SecurityHelper.GenerateHash(refreshToken),
@@ -119,29 +119,29 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
             RegenerateAntiForgeryCookies(claims);
 
-            return new AuthenticationTokenObject
+            return new AuthenticationTokenData
             {
                 TokenType = TokenType,
 
                 AccessToken = accessToken,
-                AccessTokenExpiresIn = _authenticationOptions.Value.AccessTokenExpiresIn.TotalSeconds,
+                AccessTokenExpiresIn = _authenticationOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
 
                 RefreshToken = refreshToken,
-                RefreshTokenExpiresIn = _authenticationOptions.Value.RefeshTokenExpiresIn.TotalSeconds,
+                RefreshTokenExpiresIn = _authenticationOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
             };
         }
 
-        public async Task RevokeTokenAsync(AuthenticationToken bearerToken)
+        public async Task RevokeTokenAsync(AuthenticationToken token)
         {
-            if (bearerToken == null)
-                throw new ArgumentNullException(nameof(bearerToken));
+            if (token == null)
+                throw new ArgumentNullException(nameof(token));
 
-            await RemoveExpiredTokensByUserIdAsync(bearerToken.UserId);
+            await RemoveExpiredTokensByUserIdAsync(token.UserId);
 
             if (!_authenticationOptions.Value.MultipleAuthentication)
-                await RemoveTokensByUserIdAsync(bearerToken.UserId);
+                await RemoveTokensByUserIdAsync(token.UserId);
 
-            await RemoveTokensWithSameRefreshTokenAsync(bearerToken.RefreshTokenHash);
+            await RemoveTokensWithSameRefreshTokenAsync(token.RefreshTokenHash);
             await _unitOfWork.CompleteAsync();
 
             DeleteAntiForgeryCookies();
