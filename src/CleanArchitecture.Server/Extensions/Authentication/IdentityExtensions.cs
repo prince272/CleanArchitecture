@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Server.Extensions.Identity
+namespace CleanArchitecture.Server.Extensions.Authentication
 {
     public static class IdentityExtensions
     {

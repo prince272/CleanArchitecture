@@ -1,4 +1,4 @@
-﻿namespace CleanArchitecture.Server.Extensions.AnonymousId
+﻿namespace CleanArchitecture.Server.Extensions.Anonymous
 {
     public class AnonymousFeature : IAnonymousFeature
     {

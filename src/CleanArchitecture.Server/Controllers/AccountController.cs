@@ -4,8 +4,8 @@ using CleanArchitecture.Core.Helpers;
 using CleanArchitecture.Infrastructure.Extensions.EmailSender;
 using CleanArchitecture.Infrastructure.Extensions.SmsSender;
 using CleanArchitecture.Infrastructure.Extensions.ViewRenderer;
+using CleanArchitecture.Server.Extensions.Authentication;
 using CleanArchitecture.Server.Extensions.Hosting;
-using CleanArchitecture.Server.Extensions.Identity;
 using CleanArchitecture.Server.Models;
 using CleanArchitecture.Server.Models.Account;
 using CleanArchitecture.Server.Utilities;
@@ -27,7 +27,7 @@ namespace CleanArchitecture.Server.Controllers
 {
     public class AccountController : ApiController
     {
-        private readonly AuthenticationManager _authenticationManager;
+        private readonly AuthenticationTokenProvider _authTokenProvider;
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Role> _roleManager;
         private readonly SignInManager<User> _signInManager;
@@ -38,7 +38,7 @@ namespace CleanArchitecture.Server.Controllers
         private readonly IClientServer _clientServer;
 
         public AccountController(
-            AuthenticationManager authenticationManager,
+            AuthenticationTokenProvider authTokenProvider,
             UserManager<User> userManager,
             RoleManager<Role> roleManager,
             SignInManager<User> signInManager,
@@ -48,7 +48,7 @@ namespace CleanArchitecture.Server.Controllers
             IViewRenderer viewRenderer,
             IClientServer clientServer)
         {
-            _authenticationManager = authenticationManager ?? throw new ArgumentNullException(nameof(authenticationManager));
+            _authTokenProvider = authTokenProvider ?? throw new ArgumentNullException(nameof(authTokenProvider));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
@@ -432,8 +432,8 @@ namespace CleanArchitecture.Server.Controllers
                 return ValidationProblem(errors);
             }
 
-            var bearerToken = await _authenticationManager.GenerateBearerTokenAsync(user);
-            return Ok(bearerToken);
+            var token = await _authTokenProvider.GenerateTokenAsync(user);
+            return Ok(token);
         }
 
         [HttpPost("account/{provider}/token/generate")]
@@ -460,7 +460,8 @@ namespace CleanArchitecture.Server.Controllers
 
                         if (result.Succeeded)
                         {
-                            return Ok(await _authenticationManager.GenerateBearerTokenAsync(user));
+                            var token = await _authTokenProvider.GenerateTokenAsync(user);
+                            return Ok(token);
                         }
                     }
                     else
@@ -494,8 +495,8 @@ namespace CleanArchitecture.Server.Controllers
 
                         if (result.Succeeded)
                         {
-                            var bearerToken = await _authenticationManager.GenerateBearerTokenAsync(user);
-                            return Ok(bearerToken);
+                            var token = await _authTokenProvider.GenerateTokenAsync(user);
+                            return Ok(token);
                         }
                     }
                 }
@@ -509,12 +510,12 @@ namespace CleanArchitecture.Server.Controllers
         {
             if (refreshToken == null) return ValidationProblem(title: $"'{nameof(refreshToken)}' is required.");
 
-            var bearerToken = await _authenticationManager.FindBearerTokenAsync(refreshToken);
-            if (bearerToken == null)
+            var token = await _authTokenProvider.FindTokenAsync(refreshToken);
+            if (token == null)
                 return ValidationProblem(title: $"Invalid '{nameof(refreshToken)}'.");
 
-            var newBearerToken = await _authenticationManager.RenewBearerTokenAsync(bearerToken);
-            return Ok(newBearerToken);
+            var newToken = await _authTokenProvider.RenewTokenAsync(token);
+            return Ok(newToken);
         }
 
         [HttpPost("account/token/revoke")]
@@ -522,11 +523,11 @@ namespace CleanArchitecture.Server.Controllers
         {
             if (refreshToken == null) return ValidationProblem(title: $"'{nameof(refreshToken)}' is required.");
 
-            var bearerToken = await _authenticationManager.FindBearerTokenAsync(refreshToken);
+            var bearerToken = await _authTokenProvider.FindTokenAsync(refreshToken);
             if (bearerToken == null)
                 return ValidationProblem(title: $"Invalid '{nameof(refreshToken)}'.");
 
-            await _authenticationManager.RevokeBearerTokenAsync(bearerToken);
+            await _authTokenProvider.RevokeTokenAsync(bearerToken);
             return Ok();
         }
 

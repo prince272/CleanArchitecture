@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
 
-namespace CleanArchitecture.Server.Extensions.AnonymousId
+namespace CleanArchitecture.Server.Extensions.Anonymous
 {
     public class AnonymousCookieOptionsBuilder : CookieBuilder
     {

@@ -1,6 +1,6 @@
-﻿namespace CleanArchitecture.Server.Extensions.Identity
+﻿namespace CleanArchitecture.Server.Extensions.Authentication
 {
-    public class AuthenticationData
+    public class AuthenticationTokenObject
     {
         public string TokenType { get; set; } = null!;
 

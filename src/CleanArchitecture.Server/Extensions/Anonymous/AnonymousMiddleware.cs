@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Server.Extensions.AnonymousId
+namespace CleanArchitecture.Server.Extensions.Anonymous
 {
     public class AnonymousMiddleware
     {

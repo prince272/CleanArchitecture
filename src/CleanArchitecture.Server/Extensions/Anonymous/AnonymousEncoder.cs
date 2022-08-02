@@ -2,7 +2,7 @@
 using System;
 using System.Text;
 
-namespace CleanArchitecture.Server.Extensions.AnonymousId
+namespace CleanArchitecture.Server.Extensions.Anonymous
 {
     internal static class AnonymousEncoder
     {

@@ -16,12 +16,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Humanizer;
 using FluentValidation;
-using CleanArchitecture.Server.Extensions.Identity;
 using CleanArchitecture.Server.Extensions;
-using CleanArchitecture.Server.Extensions.AnonymousId;
 using CleanArchitecture.Server.Extensions.Hosting;
 using CleanArchitecture.Infrastructure.Extensions.EmailSender;
 using CleanArchitecture.Infrastructure.Extensions.SmsSender;
+using CleanArchitecture.Server.Extensions.Authentication;
+using CleanArchitecture.Server.Extensions.Anonymous;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,18 +79,7 @@ builder.Services.AddIdentity<User, Role>(options =>
     options.ClaimsIdentity.EmailClaimType = ClaimTypes.Email;
     options.ClaimsIdentity.SecurityStampClaimType = ClaimTypes.SerialNumber;
 })
-    .AddAuthenticationManager(options =>
-    {
-        options.Issuer = builder.Configuration.GetValue<string>("Authentication:Default:Issuer");
-        options.Audience = builder.Configuration.GetValue<string>("Authentication:Default:Audience");
-        options.Secret = builder.Configuration.GetValue<string>("Authentication:Default:Secret");
-
-        options.AccessTokenExpiresIn = TimeSpan.FromMinutes(10);
-        options.RefeshTokenExpiresIn = TimeSpan.FromMinutes(25);
-
-        options.MultipleAuthentication = true;
-
-    })
+    
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
@@ -129,8 +118,8 @@ builder.Services.AddAuthentication(options =>
             OnTokenValidated = context =>
             {
                 var authenticationManager =
-                    context.HttpContext.RequestServices.GetRequiredService<AuthenticationManager>();
-                return authenticationManager.ValidateAsync(context);
+                    context.HttpContext.RequestServices.GetRequiredService<AuthenticationTokenProvider>();
+                return authenticationManager.ValidateTokenContextAsync(context);
             },
             OnMessageReceived = context => { return Task.CompletedTask; },
             OnChallenge = context =>
@@ -141,6 +130,18 @@ builder.Services.AddAuthentication(options =>
                 return Task.CompletedTask;
             }
         };
+    })
+    .AddAuthenticationTokenProvider(options =>
+    {
+        options.Issuer = builder.Configuration.GetValue<string>("Authentication:Default:Issuer");
+        options.Audience = builder.Configuration.GetValue<string>("Authentication:Default:Audience");
+        options.Secret = builder.Configuration.GetValue<string>("Authentication:Default:Secret");
+
+        options.AccessTokenExpiresIn = TimeSpan.FromMinutes(10);
+        options.RefeshTokenExpiresIn = TimeSpan.FromMinutes(25);
+
+        options.MultipleAuthentication = true;
+
     })
     .AddGoogle("google", options =>
     {
@@ -181,7 +182,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddAntiforgery(options => options.HeaderName = AuthenticationManager.XSRF_TOKEN_KEY);
+builder.Services.AddAntiforgery(options => options.HeaderName = AuthenticationTokenProvider.XSRF_TOKEN_KEY);
 
 builder.Services.AddMailKitEmailSender(options =>
 {

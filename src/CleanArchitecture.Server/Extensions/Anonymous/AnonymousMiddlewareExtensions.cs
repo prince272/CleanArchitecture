@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace CleanArchitecture.Server.Extensions.AnonymousId
+namespace CleanArchitecture.Server.Extensions.Anonymous
 {
     public static class AnonymousMiddlewareExtensions
     {

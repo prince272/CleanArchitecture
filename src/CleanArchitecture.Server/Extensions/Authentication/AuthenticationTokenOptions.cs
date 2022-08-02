@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Server.Extensions.Identity
+namespace CleanArchitecture.Server.Extensions.Authentication
 {
-    public class AuthenticationOptions
+    public class AuthenticationTokenOptions
     {
         public string Secret { set; get; } = null!;
 
