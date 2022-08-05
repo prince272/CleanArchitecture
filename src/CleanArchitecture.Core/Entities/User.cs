@@ -14,7 +14,7 @@ namespace CleanArchitecture.Core.Entities
 
         public string LastName { get; set; } = null!;
 
-        public DateTimeOffset CreatedOn { get; set; }
+        public DateTimeOffset RegisteredOn { get; set; }
 
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }

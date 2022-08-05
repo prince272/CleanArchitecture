@@ -1,4 +1,5 @@
-﻿using CleanArchitecture.Core;
+﻿using AutoMapper;
+using CleanArchitecture.Core;
 using CleanArchitecture.Core.Entities;
 using CleanArchitecture.Core.Helpers;
 using CleanArchitecture.Infrastructure.Extensions.EmailSender;
@@ -36,6 +37,7 @@ namespace CleanArchitecture.Server.Controllers
         private readonly IOptions<AppSettings> _appSettings;
         private readonly IViewRenderer _viewRenderer;
         private readonly IClientServer _clientServer;
+        private readonly IMapper _mapper;
 
         public AccountController(
             AuthenticationTokenProvider authenticationTokenProvider,
@@ -46,7 +48,8 @@ namespace CleanArchitecture.Server.Controllers
             ISmsSender smsSender,
             IOptions<AppSettings> appSettings,
             IViewRenderer viewRenderer,
-            IClientServer clientServer)
+            IClientServer clientServer,
+            IMapper mapper)
         {
             _authenticationTokenProvider = authenticationTokenProvider ?? throw new ArgumentNullException(nameof(authenticationTokenProvider));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
@@ -57,6 +60,7 @@ namespace CleanArchitecture.Server.Controllers
             _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
             _viewRenderer = viewRenderer ?? throw new ArgumentNullException(nameof(viewRenderer));
             _clientServer = clientServer ?? throw new ArgumentNullException(nameof(viewRenderer));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         [HttpPost("account/register")]
@@ -87,7 +91,7 @@ namespace CleanArchitecture.Server.Controllers
             user.LastName = form.LastName;
             user.UserName = await SecurityHelper.GenerateSlugAsync($"{form.FirstName} {form.LastName}".ToLowerInvariant(),
                 "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
-            user.CreatedOn = DateTimeOffset.UtcNow;
+            user.RegisteredOn = DateTimeOffset.UtcNow;
 
             (await _userManager.CreateAsync(user, form.Password)).ThrowIfFailed();
 
@@ -252,6 +256,18 @@ namespace CleanArchitecture.Server.Controllers
             }
 
             return Ok();
+        }
+
+        [Authorize]
+        [HttpGet("account/profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
+
+            var profile = _mapper.Map<ProfileModel>(currentUser);
+            profile.Roles = (await _userManager.GetRolesAsync(currentUser)).ToDictionary(key => key, value => value.Humanize());
+            return Ok(profile);
         }
 
         [Authorize]
@@ -442,97 +458,106 @@ namespace CleanArchitecture.Server.Controllers
             if (provider == null) return ValidationProblem(title: $"'{nameof(provider)}' is required.");
 
             var signinInfo = await _signInManager.GetExternalLoginInfoAsync();
+            if (signinInfo == null)
+                return ValidationProblem(title: "No external sign-in information provided.");
 
-            if (signinInfo != null)
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(signinInfo.LoginProvider, signinInfo.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
+            var email = signinInfo.Principal.FindFirstValue(ClaimTypes.Email);
+
+            if (!string.IsNullOrWhiteSpace(email))
             {
-                var signInResult = await _signInManager.ExternalLoginSignInAsync(signinInfo.LoginProvider, signinInfo.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+                var user = await _userManager.FindByEmailAsync(email);
 
-                var email = signinInfo.Principal.FindFirstValue(ClaimTypes.Email);
-
-                if (!string.IsNullOrWhiteSpace(email))
+                if (user != null)
                 {
-                    var user = await _userManager.FindByEmailAsync(email);
+                    await _userManager.RemoveLoginAsync(user, signinInfo.LoginProvider, signinInfo.ProviderKey);
+                    var result = await _userManager.AddLoginAsync(user, signinInfo);
 
-                    if (user != null)
+                    if (result.Succeeded)
                     {
-                        await _userManager.RemoveLoginAsync(user, signinInfo.LoginProvider, signinInfo.ProviderKey);
-                        var result = await _userManager.AddLoginAsync(user, signinInfo);
-
-                        if (result.Succeeded)
-                        {
-                            var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
-                            return Ok(token);
-                        }
+                        var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
+                        return Ok(token);
                     }
-                    else
+                }
+                else
+                {
+                    var firstName = signinInfo.Principal.FindFirstValue(ClaimTypes.GivenName) ?? string.Empty;
+                    var lastName = signinInfo.Principal.FindFirstValue(ClaimTypes.Surname) ?? string.Empty; ;
+
+                    user = new User();
+                    user.Email = email;
+                    user.EmailConfirmed = true;
+                    user.FirstName = firstName;
+                    user.LastName = lastName;
+                    user.UserName = await SecurityHelper.GenerateSlugAsync($"{firstName} {lastName}".ToLowerInvariant(),
+                                 "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
+                    user.RegisteredOn = DateTimeOffset.UtcNow;
+
+                    (await _userManager.CreateAsync(user, Guid.NewGuid().ToString())).ThrowIfFailed();
+
+                    foreach (var roleName in RoleNames.All)
                     {
-                        var firstName = signinInfo.Principal.FindFirstValue(ClaimTypes.GivenName);
-                        var lastName = signinInfo.Principal.FindFirstValue(ClaimTypes.Surname);
+                        if (!await _roleManager.RoleExistsAsync(roleName))
+                            (await _roleManager.CreateAsync(new Role(roleName))).ThrowIfFailed();
+                    }
 
-                        user = new User();
-                        user.Email = email;
-                        user.EmailConfirmed = true;
-                        user.FirstName = firstName;
-                        user.LastName = lastName;
-                        user.UserName = await SecurityHelper.GenerateSlugAsync($"{firstName} {lastName}".ToLowerInvariant(),
-                                     "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
-                        user.CreatedOn = DateTimeOffset.UtcNow;
+                    if (await _userManager.Users.LongCountAsync() == 1)
+                        (await _userManager.AddToRolesAsync(user, new string[] { RoleNames.Admin, RoleNames.Memeber })).ThrowIfFailed();
+                    else
+                        (await _userManager.AddToRolesAsync(user, new string[] { RoleNames.Memeber })).ThrowIfFailed();
 
-                        (await _userManager.CreateAsync(user, Guid.NewGuid().ToString())).ThrowIfFailed();
+                    var result = await _userManager.AddLoginAsync(user, signinInfo);
 
-                        foreach (var roleName in RoleNames.All)
-                        {
-                            if (!await _roleManager.RoleExistsAsync(roleName))
-                                (await _roleManager.CreateAsync(new Role(roleName))).ThrowIfFailed();
-                        }
-
-                        if (await _userManager.Users.LongCountAsync() == 1)
-                            (await _userManager.AddToRolesAsync(user, new string[] { RoleNames.Admin, RoleNames.Memeber })).ThrowIfFailed();
-                        else
-                            (await _userManager.AddToRolesAsync(user, new string[] { RoleNames.Memeber })).ThrowIfFailed();
-
-                        var result = await _userManager.AddLoginAsync(user, signinInfo);
-
-                        if (result.Succeeded)
-                        {
-                            var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
-                            return Ok(token);
-                        }
+                    if (result.Succeeded)
+                    {
+                        var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
+                        return Ok(token);
                     }
                 }
             }
 
-            return ValidationProblem(title: "No external login information.");
+            return ValidationProblem(title: "External sign-in information is not valid.");
         }
 
         [HttpPost("account/token/refresh")]
-        public async Task<IActionResult> RefreshToken([FromQuery] string refreshToken)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshAccountTokenForm form)
         {
-            if (refreshToken == null) return ValidationProblem(title: $"'{nameof(refreshToken)}' is required.");
+            var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
+            if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
-            var token = await _authenticationTokenProvider.FindTokenAsync(refreshToken);
+            var token = await _authenticationTokenProvider.FindTokenAsync(form.RefreshToken);
             if (token == null)
-                return ValidationProblem(title: $"Invalid '{nameof(refreshToken)}'.");
+            {
+                var errors = new Dictionary<string, string[]>();
+                errors.Add(() => form.RefreshToken, $"'{ContactHelper.Switch(form.RefreshToken).Humanize()}' is not valid.");
+                return ValidationProblem(errors);
+            }
 
             var newToken = await _authenticationTokenProvider.RenewTokenAsync(token);
             return Ok(newToken);
         }
 
         [HttpPost("account/token/revoke")]
-        public async Task<IActionResult> RevokeToken([FromQuery] string refreshToken)
+        public async Task<IActionResult> RevokeToken([FromBody] RefreshAccountTokenForm form)
         {
-            if (refreshToken == null) return ValidationProblem(title: $"'{nameof(refreshToken)}' is required.");
+            var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
+            if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
-            var bearerToken = await _authenticationTokenProvider.FindTokenAsync(refreshToken);
-            if (bearerToken == null)
-                return ValidationProblem(title: $"Invalid '{nameof(refreshToken)}'.");
+            var token = await _authenticationTokenProvider.FindTokenAsync(form.RefreshToken);
+            if (token == null)
+            {
+                var errors = new Dictionary<string, string[]>();
+                errors.Add(() => form.RefreshToken, $"'{ContactHelper.Switch(form.RefreshToken).Humanize()}' is not valid.");
+                return ValidationProblem(errors);
+            }
 
-            await _authenticationTokenProvider.RevokeTokenAsync(bearerToken);
+            await _authenticationTokenProvider.RevokeTokenAsync(token);
             return Ok();
         }
 
         [HttpGet("account/{provider}/connect")]
-        public IActionResult ExternalLogin([FromRoute] string provider, string returnUrl)
+        public IActionResult ExternalSignIn([FromRoute] string provider, string returnUrl)
         {
             if (provider == null) return ValidationProblem(title: $"'{nameof(provider)}' is required.");
             if (returnUrl == null) return ValidationProblem(title: $"'{nameof(returnUrl)}' is required.");
@@ -542,7 +567,7 @@ namespace CleanArchitecture.Server.Controllers
                 return Redirect(returnUrl);
             }
 
-            // Request a redirect to the external login provider.
+            // Request a redirect to the external sign-in provider.
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, returnUrl);
             return Challenge(properties, provider);
         }

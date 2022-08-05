@@ -79,7 +79,6 @@ builder.Services.AddIdentity<User, Role>(options =>
     options.ClaimsIdentity.EmailClaimType = ClaimTypes.Email;
     options.ClaimsIdentity.SecurityStampClaimType = ClaimTypes.SerialNumber;
 })
-    
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
@@ -242,6 +241,7 @@ builder.Services.AddFluentValidation(options =>
     options.DisableDataAnnotationsValidation = true;
     options.RegisterValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 });
+builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -263,6 +263,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors();
 
 app.UseAnonymous();
 app.UseAuthentication();

@@ -1,15 +1,37 @@
 import logo from './logo.svg';
 import './App.css';
-import { PopupWindow } from './jwt';
-import { useEffect } from 'react';
-import UrlUtility from './jwt/UrlUtility';
+import { useEffect, useMemo, useState } from 'react';
+import { createHttpClient } from './utils/http-client';
 
+const httpClient = createHttpClient({
+  baseURL: 'https://localhost:7194',
+
+  signinCallback: (request, data, requestConfig) => {
+    if (data.provider) return request.post(`account/${data.provider}/token/generate`, data, requestConfig);
+    return request.post(`account/token/generate`, data, requestConfig);
+  },
+
+  refreshCallback: (request, data, requestConfig) => {
+    return request.post('account/token/refresh', data, requestConfig);
+  },
+
+  signoutCallback: (request, data, requestConfig) => {
+    return request.post('account/token/revoke', data, requestConfig);
+  },
+
+  userCallback: (request, requestConfig) => {
+    return request.get('account/profile', requestConfig);
+  }
+});
 
 function App() {
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    PopupWindow.notify();
-  }, []);
+    httpClient.auth.userSubject.subscribe((value) => {
+      setProfile(value);
+    });
+  })
 
   return (
     <div className="App">
@@ -17,28 +39,42 @@ function App() {
         <input type="button" value="button name" onClick={() => window.open('http://localhost:9000/')} />
         <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Edit <code>src/App.js</code> and save to reload.
+          {profile ? JSON.stringify(profile) : <>No profile</>}
         </p>
-        <a
+        <button
           className="App-link"
           onClick={async () => {
-            try {
-              const popupWindow = new PopupWindow();
-              let url = UrlUtility.addQueryParam('http://localhost:3000', 'state', popupWindow.state);
-              url = UrlUtility.addQueryParam('https://localhost:7194/account/google/connect', 'returnUrl', url);
-              await popupWindow.navigate(url);
-              alert('Ended with a success!');
-            }
-            catch (ex) {
-              alert('Ended with an error!');
-              throw ex;
-            }
+            console.log("Loging in");
+            await httpClient.signin({ username: 'princeowusu.272@gmail.com', password: 'Owusu#15799' });
+            console.log("Login complete");
           }}
-          target="_blank"
-          rel="noopener noreferrer"
         >
-          Learn React
-        </a>
+          Login to Account
+        </button>
+        <button
+          className="App-link"
+          onClick={async () => {
+            httpClient.auth.removeAccessToken();
+          }}
+        >
+          Clear authentication
+        </button>
+        <button
+          className="App-link"
+          onClick={async () => {
+            console.log((await httpClient.get('authorize')).data);
+          }}
+        >
+          Access a protected resource
+        </button>
+        <button
+          className="App-link"
+          onClick={async () => {
+            await httpClient.signout();
+          }}
+        >
+          Log out
+        </button>
       </header>
     </div>
   );

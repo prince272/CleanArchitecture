@@ -22,7 +22,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
     public class AuthenticationTokenProvider
     {
         public const string XSRF_TOKEN_KEY = "XSRF-TOKEN";
-        public string TokenType => "bearer";
+        public string TokenType => "Bearer";
 
         private readonly IOptionsSnapshot<AuthenticationTokenOptions> _authenticationOptions;
         private readonly ILogger<AuthenticationTokenProvider> _logger;
@@ -83,10 +83,10 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 TokenType = TokenType,
 
                 AccessToken = accessToken,
-                AccessTokenExpiresIn = _authenticationOptions.Value.AccessTokenExpiresIn.TotalSeconds,
+                AccessTokenExpiresIn = (long)_authenticationOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
 
                 RefreshToken = refreshToken,
-                RefreshTokenExpiresIn = _authenticationOptions.Value.RefeshTokenExpiresIn.TotalSeconds,
+                RefreshTokenExpiresIn = (long)_authenticationOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
             };
         }
 
@@ -124,10 +124,10 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 TokenType = TokenType,
 
                 AccessToken = accessToken,
-                AccessTokenExpiresIn = _authenticationOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
+                AccessTokenExpiresIn = (long)_authenticationOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
 
                 RefreshToken = refreshToken,
-                RefreshTokenExpiresIn = _authenticationOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
+                RefreshTokenExpiresIn = (long)_authenticationOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
             };
         }
 
