@@ -1,6 +1,6 @@
 ﻿namespace CleanArchitecture.Server.Extensions.Authentication
 {
-    public class AuthenticationTokenData
+    public class BearerTokenData
     {
         public string TokenType { get; set; } = null!;
 

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Core.Entities
 {
-    public class AuthenticationToken : IEntity
+    public class BearerToken : IEntity
     {
         public long Id { get; set; }
 

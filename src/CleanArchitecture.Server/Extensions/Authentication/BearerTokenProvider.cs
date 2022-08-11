@@ -19,29 +19,29 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Server.Extensions.Authentication
 {
-    public class AuthenticationTokenProvider
+    public class BearerTokenProvider
     {
         public const string XSRF_TOKEN_KEY = "XSRF-TOKEN";
         public string TokenType => "Bearer";
 
-        private readonly IOptionsSnapshot<AuthenticationTokenOptions> _authenticationOptions;
-        private readonly ILogger<AuthenticationTokenProvider> _logger;
+        private readonly IOptionsSnapshot<BearerTokenOptions> _bearerTokenOptions;
+        private readonly ILogger<BearerTokenProvider> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<User> _userManager;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IAntiforgery _antiforgery;
         private readonly IOptions<AntiforgeryOptions> _antiforgeryOptions;
 
-        public AuthenticationTokenProvider(
-            IOptionsSnapshot<AuthenticationTokenOptions> authenticationOptions,
-            ILogger<AuthenticationTokenProvider> logger,
+        public BearerTokenProvider(
+            IOptionsSnapshot<BearerTokenOptions> authenticationOptions,
+            ILogger<BearerTokenProvider> logger,
             IUnitOfWork unitOfWork,
             UserManager<User> userManager,
             IHttpContextAccessor contextAccessor,
             IAntiforgery antiforgery,
             IOptions<AntiforgeryOptions> antiforgeryOptions)
         {
-            _authenticationOptions = authenticationOptions ?? throw new ArgumentNullException(nameof(authenticationOptions));
+            _bearerTokenOptions = authenticationOptions ?? throw new ArgumentNullException(nameof(authenticationOptions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
@@ -50,54 +50,54 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             _antiforgeryOptions = antiforgeryOptions ?? throw new ArgumentNullException(nameof(antiforgery));
         }
 
-        public async Task<AuthenticationTokenData> GenerateTokenAsync(User user)
+        public async Task<BearerTokenData> GenerateTokenAsync(User user)
         {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
             await RemoveExpiredTokensByUserIdAsync(user.Id);
 
-            if (!_authenticationOptions.Value.MultipleAuthentication)
+            if (!_bearerTokenOptions.Value.MultipleAuthentication)
                 await RemoveTokensByUserIdAsync(user.Id);
 
             var now = DateTimeOffset.UtcNow;
             var (accessToken, claims) = await GenerateAccessTokenAsync(now, user);
             var refreshToken = GenerateRefreshToken(now);
 
-            _unitOfWork.Add(new AuthenticationToken
+            _unitOfWork.Add(new BearerToken
             {
                 UserId = user.Id,
 
                 AccessTokenHash = SecurityHelper.GenerateHash(accessToken),
                 RefreshTokenHash = SecurityHelper.GenerateHash(refreshToken),
 
-                AccessTokenExpiresOn = now.Add(_authenticationOptions.Value.AccessTokenExpiresIn),
-                RefreshTokenExpiresOn = now.Add(_authenticationOptions.Value.RefeshTokenExpiresIn)
+                AccessTokenExpiresOn = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
+                RefreshTokenExpiresOn = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
             });
             await _unitOfWork.CompleteAsync();
 
             RegenerateAntiForgeryCookies(claims);
 
-            return new AuthenticationTokenData
+            return new BearerTokenData
             {
                 TokenType = TokenType,
 
                 AccessToken = accessToken,
-                AccessTokenExpiresIn = (long)_authenticationOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
+                AccessTokenExpiresIn = (long)_bearerTokenOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
 
                 RefreshToken = refreshToken,
-                RefreshTokenExpiresIn = (long)_authenticationOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
+                RefreshTokenExpiresIn = (long)_bearerTokenOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
             };
         }
 
-        public async Task<AuthenticationTokenData> RenewTokenAsync(AuthenticationToken token)
+        public async Task<BearerTokenData> RenewTokenAsync(BearerToken token)
         {
             if (token == null)
                 throw new ArgumentNullException(nameof(token));
 
             await RemoveExpiredTokensByUserIdAsync(token.UserId);
 
-            if (!_authenticationOptions.Value.MultipleAuthentication)
+            if (!_bearerTokenOptions.Value.MultipleAuthentication)
                 await RemoveTokensByUserIdAsync(token.UserId);
 
             await RemoveTokensWithSameRefreshTokenAsync(token.RefreshTokenHash);
@@ -105,40 +105,40 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             var now = DateTimeOffset.UtcNow;
             var (accessToken, claims) = await GenerateAccessTokenAsync(now, token.User);
             var refreshToken = GenerateRefreshToken(now);
-            _unitOfWork.Add(new AuthenticationToken
+            _unitOfWork.Add(new BearerToken
             {
                 UserId = token.UserId,
 
                 AccessTokenHash = SecurityHelper.GenerateHash(accessToken),
                 RefreshTokenHash = SecurityHelper.GenerateHash(refreshToken),
 
-                AccessTokenExpiresOn = now.Add(_authenticationOptions.Value.AccessTokenExpiresIn),
-                RefreshTokenExpiresOn = now.Add(_authenticationOptions.Value.RefeshTokenExpiresIn)
+                AccessTokenExpiresOn = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
+                RefreshTokenExpiresOn = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
             });
             await _unitOfWork.CompleteAsync();
 
             RegenerateAntiForgeryCookies(claims);
 
-            return new AuthenticationTokenData
+            return new BearerTokenData
             {
                 TokenType = TokenType,
 
                 AccessToken = accessToken,
-                AccessTokenExpiresIn = (long)_authenticationOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
+                AccessTokenExpiresIn = (long)_bearerTokenOptions.Value.AccessTokenExpiresIn.TotalMilliseconds,
 
                 RefreshToken = refreshToken,
-                RefreshTokenExpiresIn = (long)_authenticationOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
+                RefreshTokenExpiresIn = (long)_bearerTokenOptions.Value.RefeshTokenExpiresIn.TotalMilliseconds,
             };
         }
 
-        public async Task RevokeTokenAsync(AuthenticationToken token)
+        public async Task RevokeTokenAsync(BearerToken token)
         {
             if (token == null)
                 throw new ArgumentNullException(nameof(token));
 
             await RemoveExpiredTokensByUserIdAsync(token.UserId);
 
-            if (!_authenticationOptions.Value.MultipleAuthentication)
+            if (!_bearerTokenOptions.Value.MultipleAuthentication)
                 await RemoveTokensByUserIdAsync(token.UserId);
 
             await RemoveTokensWithSameRefreshTokenAsync(token.RefreshTokenHash);
@@ -147,13 +147,13 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             DeleteAntiForgeryCookies();
         }
 
-        public Task<AuthenticationToken?> FindTokenAsync(string refreshToken)
+        public Task<BearerToken?> FindTokenAsync(string refreshToken)
         {
             if (refreshToken == null)
                 throw new ArgumentNullException(nameof(refreshToken));
 
             var refreshTokenHash = SecurityHelper.GenerateHash(refreshToken);
-            return _unitOfWork.Query<AuthenticationToken>().Include(bt => bt.User).FirstOrDefaultAsync(bt => bt.RefreshTokenHash == refreshTokenHash);
+            return _unitOfWork.Query<BearerToken>().Include(bt => bt.User).FirstOrDefaultAsync(bt => bt.RefreshTokenHash == refreshTokenHash);
         }
 
         private async Task<(string AccessToken, IEnumerable<Claim> Claims)> GenerateAccessTokenAsync(DateTimeOffset now, User user)
@@ -165,31 +165,31 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
             var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Jti, SecurityHelper.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _authenticationOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Jti, SecurityHelper.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
-                new(JwtRegisteredClaimNames.Iss, _authenticationOptions.Value.Issuer, ClaimValueTypes.String, _authenticationOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Iss, _bearerTokenOptions.Value.Issuer, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
-                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _authenticationOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _bearerTokenOptions.Value.Issuer),
 
-                new(ClaimTypes.NameIdentifier, user.Id.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.String, _authenticationOptions.Value.Issuer),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
-                new(ClaimTypes.Name, user.UserName, ClaimValueTypes.String, _authenticationOptions.Value.Issuer),
+                new(ClaimTypes.Name, user.UserName, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
-                new(ClaimTypes.SerialNumber, user.SecurityStamp, ClaimValueTypes.String, _authenticationOptions.Value.Issuer),
+                new(ClaimTypes.SerialNumber, user.SecurityStamp, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
             };
 
             foreach (var roleName in roleNames)
-                claims.Add(new Claim(ClaimTypes.Role, roleName, ClaimValueTypes.String, _authenticationOptions.Value.Issuer));
+                claims.Add(new Claim(ClaimTypes.Role, roleName, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer));
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_authenticationOptions.Value.Secret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_bearerTokenOptions.Value.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                _authenticationOptions.Value.Issuer,
-                _authenticationOptions.Value.Audience,
+                _bearerTokenOptions.Value.Issuer,
+                _bearerTokenOptions.Value.Audience,
                 claims,
                 now.DateTime,
-                now.DateTime.Add(_authenticationOptions.Value.AccessTokenExpiresIn),
+                now.DateTime.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
                 creds);
             return (new JwtSecurityTokenHandler().WriteToken(token), claims);
         }
@@ -201,24 +201,24 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
             var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Jti, SecurityHelper.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _authenticationOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Jti, SecurityHelper.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
-                new(JwtRegisteredClaimNames.Iss, _authenticationOptions.Value.Issuer, ClaimValueTypes.String, _authenticationOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Iss, _bearerTokenOptions.Value.Issuer, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
-                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _authenticationOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _bearerTokenOptions.Value.Issuer),
 
-                new(ClaimTypes.SerialNumber, refreshTokenSerial, ClaimValueTypes.String, _authenticationOptions.Value.Issuer)
+                new(ClaimTypes.SerialNumber, refreshTokenSerial, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_authenticationOptions.Value.Secret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_bearerTokenOptions.Value.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                _authenticationOptions.Value.Issuer,
-                _authenticationOptions.Value.Audience,
+                _bearerTokenOptions.Value.Issuer,
+                _bearerTokenOptions.Value.Audience,
                 claims,
                 now.DateTime,
-                now.DateTime.Add(_authenticationOptions.Value.RefeshTokenExpiresIn),
+                now.DateTime.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn),
                 creds);
 
             var refreshToken = new JwtSecurityTokenHandler().WriteToken(token);
@@ -262,7 +262,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
         private async Task RemoveTokensByUserIdAsync(long userId)
         {
-            var bearerTokens = await _unitOfWork.Query<AuthenticationToken>().Where(bt => bt.UserId == userId).ToArrayAsync();
+            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.UserId == userId).ToArrayAsync();
             _unitOfWork.Remove(bearerTokens);
         }
 
@@ -271,14 +271,14 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             if (refreshTokenHash == null)
                 throw new ArgumentNullException(nameof(refreshTokenHash));
 
-            var bearerTokens = await _unitOfWork.Query<AuthenticationToken>().Where(bt => bt.RefreshTokenHash == refreshTokenHash).ToArrayAsync();
+            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.RefreshTokenHash == refreshTokenHash).ToArrayAsync();
             _unitOfWork.Remove(bearerTokens);
         }
 
         private async Task RemoveExpiredTokensByUserIdAsync(long userId)
         {
             var now = DateTimeOffset.UtcNow;
-            var bearerTokens = await _unitOfWork.Query<AuthenticationToken>().Where(bt => bt.UserId == userId && bt.RefreshTokenExpiresOn < now).ToArrayAsync();
+            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.UserId == userId && bt.RefreshTokenExpiresOn < now).ToArrayAsync();
             _unitOfWork.Remove(bearerTokens);
         }
 
@@ -288,7 +288,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 throw new ArgumentNullException(nameof(accessToken));
 
             var accessTokenHash = SecurityHelper.GenerateHash(accessToken);
-            var bearerToken = await _unitOfWork.Query<AuthenticationToken>().FirstOrDefaultAsync(
+            var bearerToken = await _unitOfWork.Query<BearerToken>().FirstOrDefaultAsync(
                 bt => bt.AccessTokenHash == accessTokenHash && bt.UserId == userId);
             return bearerToken?.AccessTokenExpiresOn >= DateTimeOffset.UtcNow;
         }

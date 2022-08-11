@@ -4,10 +4,10 @@ namespace CleanArchitecture.Server
 {
     public class AppSettings
     {
-        public MailingSettings Mailing { get; set; } = null!;
+        public MailingOptions Mailing { get; set; } = null!;
     }
 
-    public class MailingSettings
+    public class MailingOptions
     {
         public IDictionary<string, EmailAccount> Accounts { get; set; } = new Dictionary<string, EmailAccount>();
     }

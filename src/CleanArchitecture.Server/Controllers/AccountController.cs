@@ -28,7 +28,7 @@ namespace CleanArchitecture.Server.Controllers
 {
     public class AccountController : ApiController
     {
-        private readonly AuthenticationTokenProvider _authenticationTokenProvider;
+        private readonly BearerTokenProvider _bearerTokenProvider;
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<Role> _roleManager;
         private readonly SignInManager<User> _signInManager;
@@ -40,7 +40,7 @@ namespace CleanArchitecture.Server.Controllers
         private readonly IMapper _mapper;
 
         public AccountController(
-            AuthenticationTokenProvider authenticationTokenProvider,
+            BearerTokenProvider bearerTokenProvider,
             UserManager<User> userManager,
             RoleManager<Role> roleManager,
             SignInManager<User> signInManager,
@@ -51,7 +51,7 @@ namespace CleanArchitecture.Server.Controllers
             IClientServer clientServer,
             IMapper mapper)
         {
-            _authenticationTokenProvider = authenticationTokenProvider ?? throw new ArgumentNullException(nameof(authenticationTokenProvider));
+            _bearerTokenProvider = bearerTokenProvider ?? throw new ArgumentNullException(nameof(bearerTokenProvider));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
@@ -258,16 +258,22 @@ namespace CleanArchitecture.Server.Controllers
             return Ok();
         }
 
+        private async Task<ProfileModel> GetProfileModelAsync(User user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            var profile = _mapper.Map<ProfileModel>(user);
+            profile.Roles = (await _userManager.GetRolesAsync(user)).ToDictionary(key => key, value => value.Humanize());
+            return profile;
+        }
+
         [Authorize]
         [HttpGet("account/profile")]
         public async Task<IActionResult> GetProfile()
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
-
-            var profile = _mapper.Map<ProfileModel>(currentUser);
-            profile.Roles = (await _userManager.GetRolesAsync(currentUser)).ToDictionary(key => key, value => value.Humanize());
-            return Ok(profile);
+            return Ok(await GetProfileModelAsync(currentUser));
         }
 
         [Authorize]
@@ -448,8 +454,9 @@ namespace CleanArchitecture.Server.Controllers
                 return ValidationProblem(errors);
             }
 
-            var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
-            return Ok(token);
+            var data = _mapper.Map<BearerTokenModel>(await _bearerTokenProvider.GenerateTokenAsync(user));
+            data.User = await GetProfileModelAsync(user);
+            return Ok(data);
         }
 
         [HttpPost("account/{provider}/token/generate")]
@@ -476,8 +483,9 @@ namespace CleanArchitecture.Server.Controllers
 
                     if (result.Succeeded)
                     {
-                        var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
-                        return Ok(token);
+                        var data = _mapper.Map<BearerTokenModel>(await _bearerTokenProvider.GenerateTokenAsync(user));
+                        data.User = await GetProfileModelAsync(user);
+                        return Ok(data);
                     }
                 }
                 else
@@ -511,8 +519,9 @@ namespace CleanArchitecture.Server.Controllers
 
                     if (result.Succeeded)
                     {
-                        var token = await _authenticationTokenProvider.GenerateTokenAsync(user);
-                        return Ok(token);
+                        var data = _mapper.Map<BearerTokenModel>(await _bearerTokenProvider.GenerateTokenAsync(user));
+                        data.User = await GetProfileModelAsync(user);
+                        return Ok(data);
                     }
                 }
             }
@@ -526,7 +535,8 @@ namespace CleanArchitecture.Server.Controllers
             var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
-            var token = await _authenticationTokenProvider.FindTokenAsync(form.RefreshToken);
+
+            var token = await _bearerTokenProvider.FindTokenAsync(form.RefreshToken);
             if (token == null)
             {
                 var errors = new Dictionary<string, string[]>();
@@ -534,8 +544,10 @@ namespace CleanArchitecture.Server.Controllers
                 return ValidationProblem(errors);
             }
 
-            var newToken = await _authenticationTokenProvider.RenewTokenAsync(token);
-            return Ok(newToken);
+            var user = token.User;
+            var data = _mapper.Map<BearerTokenModel>(await _bearerTokenProvider.RenewTokenAsync(token));
+            data.User = await GetProfileModelAsync(user);
+            return Ok(data);
         }
 
         [HttpPost("account/token/revoke")]
@@ -544,7 +556,7 @@ namespace CleanArchitecture.Server.Controllers
             var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
-            var token = await _authenticationTokenProvider.FindTokenAsync(form.RefreshToken);
+            var token = await _bearerTokenProvider.FindTokenAsync(form.RefreshToken);
             if (token == null)
             {
                 var errors = new Dictionary<string, string[]>();
@@ -552,7 +564,7 @@ namespace CleanArchitecture.Server.Controllers
                 return ValidationProblem(errors);
             }
 
-            await _authenticationTokenProvider.RevokeTokenAsync(token);
+            await _bearerTokenProvider.RevokeTokenAsync(token);
             return Ok();
         }
 

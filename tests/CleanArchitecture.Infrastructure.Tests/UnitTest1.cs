@@ -8,17 +8,31 @@ namespace CleanArchitecture.Infrastructure.Tests
     public class UnitTest1
     {
         [Fact]
-        public void Test1()
+        public object Test1()
         {
 
-            throw new InvalidOperationException($"Value '{ContactType.PhoneNumber}' of type '{nameof(ContactType)}' is not supported.");
+            throw new ArgumentNullException(nameof(MyClass));
+            var _retry = true;
+            var _queued = true;
+
+
+            if (!_retry && !_queued)
+            {
+
+            }
+            else
+            {
+                return 1;
+            }
+
         }
+    }
 
-        public enum Type
+    public class MyClass
+    {
+        public MyClass(string name)
         {
-            A1,
-            B2,
-            C3
+
         }
     }
 }

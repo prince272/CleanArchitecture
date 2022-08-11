@@ -117,7 +117,7 @@ builder.Services.AddAuthentication(options =>
             OnTokenValidated = context =>
             {
                 var authenticationManager =
-                    context.HttpContext.RequestServices.GetRequiredService<AuthenticationTokenProvider>();
+                    context.HttpContext.RequestServices.GetRequiredService<BearerTokenProvider>();
                 return authenticationManager.ValidateTokenContextAsync(context);
             },
             OnMessageReceived = context => { return Task.CompletedTask; },
@@ -130,14 +130,14 @@ builder.Services.AddAuthentication(options =>
             }
         };
     })
-    .AddAuthenticationTokenProvider(options =>
+    .AddBearerTokenProvider(options =>
     {
         options.Issuer = builder.Configuration.GetValue<string>("Authentication:Default:Issuer");
         options.Audience = builder.Configuration.GetValue<string>("Authentication:Default:Audience");
         options.Secret = builder.Configuration.GetValue<string>("Authentication:Default:Secret");
 
-        options.AccessTokenExpiresIn = TimeSpan.FromMinutes(10);
-        options.RefeshTokenExpiresIn = TimeSpan.FromMinutes(25);
+        options.AccessTokenExpiresIn = TimeSpan.FromSeconds(15);
+        options.RefeshTokenExpiresIn = TimeSpan.FromMinutes(90);
 
         options.MultipleAuthentication = true;
 
@@ -181,7 +181,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddAntiforgery(options => options.HeaderName = AuthenticationTokenProvider.XSRF_TOKEN_KEY);
+builder.Services.AddAntiforgery(options => options.HeaderName = BearerTokenProvider.XSRF_TOKEN_KEY);
 
 builder.Services.AddMailKitEmailSender(options =>
 {

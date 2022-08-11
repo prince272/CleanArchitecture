@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using CleanArchitecture.Core.Entities;
+using CleanArchitecture.Server.Extensions.Authentication;
 
 namespace CleanArchitecture.Server.Models.Account
 {
@@ -29,6 +30,29 @@ namespace CleanArchitecture.Server.Models.Account
         public ProfileProfile()
         {
             CreateMap<User, ProfileModel>();
+        }
+    }
+
+    public class BearerTokenModel
+    {
+        public string TokenType { get; set; } = null!;
+
+        public string AccessToken { get; set; } = null!;
+
+        public long AccessTokenExpiresIn { get; set; }
+
+        public string RefreshToken { get; set; } = null!;
+
+        public long RefreshTokenExpiresIn { get; set; }
+
+        public ProfileModel User { get; set; } = null!;
+    }
+
+    public class BearerTokenProfile : Profile
+    {
+        public BearerTokenProfile()
+        {
+            CreateMap<BearerTokenData, BearerTokenModel>();
         }
     }
 }

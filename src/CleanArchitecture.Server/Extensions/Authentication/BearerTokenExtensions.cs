@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Server.Extensions.Authentication
 {
-    public static class AuthenticationTokenExtensions
+    public static class BearerTokenExtensions
     {
-        public static AuthenticationBuilder AddAuthenticationTokenProvider(this AuthenticationBuilder identityBuilder, Action<AuthenticationTokenOptions> configure)
+        public static AuthenticationBuilder AddBearerTokenProvider(this AuthenticationBuilder identityBuilder, Action<BearerTokenOptions> configure)
         {
             identityBuilder.Services.Configure(configure);
-            identityBuilder.Services.AddTransient<AuthenticationTokenProvider>();
+            identityBuilder.Services.AddTransient<BearerTokenProvider>();
             return identityBuilder;
         }
     }

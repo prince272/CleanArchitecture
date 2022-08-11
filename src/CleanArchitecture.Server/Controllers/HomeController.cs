@@ -16,6 +16,13 @@ namespace CleanArchitecture.Server.Controllers
             return NoContent();
         }
 
+        [Authorize]
+        [HttpGet("protected")]
+        public IActionResult Protected()
+        {
+            return Ok();
+        }
+
         [AllowAnonymous]
         [ApiExplorerSettings(IgnoreApi = true)]
         [Route("error/{statusCode}")]

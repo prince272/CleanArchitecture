@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Server.Extensions.Authentication
 {
-    public class AuthenticationTokenOptions
+    public class BearerTokenOptions
     {
         public string Secret { set; get; } = null!;
 
