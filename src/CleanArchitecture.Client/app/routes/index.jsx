@@ -1,19 +1,8 @@
-import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import client from "client";
-
-export const loader = async () => {
-  const response = await client.signin({ username: 'princeowusu.272@gmail.com', password: 'Owusu#15799' });
-  return json(response.data);
-};
-
 export default function Index() {
-  const profile = useLoaderData();
-
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.4" }}>
       <h1>Welcome to Remix</h1>
-      {JSON.stringify(profile)}
+
       <ul>
         <li>
           <a

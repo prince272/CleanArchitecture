@@ -3,8 +3,6 @@ const express = require("express");
 const compression = require("compression");
 const morgan = require("morgan");
 const { createRequestHandler } = require("@remix-run/express");
-const https = require("https");
-const fs = require("fs");
 
 const BUILD_DIR = path.join(process.cwd(), "build");
 
@@ -31,34 +29,22 @@ app.all(
   "*",
   process.env.NODE_ENV === "development"
     ? (req, res, next) => {
-      purgeRequireCache();
+        purgeRequireCache();
 
-      return createRequestHandler({
+        return createRequestHandler({
+          build: require(BUILD_DIR),
+          mode: process.env.NODE_ENV,
+        })(req, res, next);
+      }
+    : createRequestHandler({
         build: require(BUILD_DIR),
         mode: process.env.NODE_ENV,
-      })(req, res, next);
-    }
-    : createRequestHandler({
-      build: require(BUILD_DIR),
-      mode: process.env.NODE_ENV,
-    })
+      })
 );
-
 const port = process.env.PORT || 3000;
-const dev = process.env.NODE_ENV !== "production";
-const serverOptions = dev ? {
-  key: fs.readFileSync("./assets/cert/localhost-key.pem"),
-  cert: fs.readFileSync("./assets/cert/localhost-cert.pem")
-} : {};
-
-// https.createServer(serverOptions, app)
-//   .listen(port, (err) => {
-//     if (err) throw err;
-//     console.log(`> Ready on https://localhost:${port}`);
-//   });
 
 app.listen(port, () => {
-  console.log(`> Ready on http://localhost:${port}`);
+  console.log(`Express server listening on port ${port}`);
 });
 
 function purgeRequireCache() {
