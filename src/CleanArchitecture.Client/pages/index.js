@@ -1,8 +1,24 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from 'next/head';
+import Image from 'next/image';
+import { useEffect } from 'react';
+import styles from '../assets/styles/Home.module.css';
+import client from '../client';
 
-export default function Home() {
+export async function getServerSideProps(context) {
+  const response = await client.signin({ username: 'princeowusu.272@gmail.com', password: 'Owusu#15799' });
+  return {
+    props: {
+      data: response.data
+    }
+  }
+}
+
+export default function Home(props) {
+
+  useEffect(() => {
+    console.log(props);
+  }, []);
+
   return (
     <div className={styles.container}>
       <Head>
