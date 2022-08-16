@@ -1,8 +1,12 @@
 import Head from 'next/head'
 import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import { useEffect } from 'react'
+import styles from '../assets/styles/Home.module.css'
 
 export default function Home() {
+  useEffect(() => {
+    console.log(window.env);
+  }, []);
   return (
     <div className={styles.container}>
       <Head>
