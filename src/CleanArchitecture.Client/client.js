@@ -1,8 +1,8 @@
-import Cookies from "js-cookie";
-import { BehaviorSubject } from "rxjs";
-import QueryString from "qs";
-import Axios from "axios";
-import https from "https";
+import Cookies from 'js-cookie';
+import { BehaviorSubject } from 'rxjs';
+import QueryString from 'qs';
+import Axios from 'axios';
+import https from 'https';
 
 const createCookieStorage = (origin) => {
 
@@ -111,7 +111,7 @@ const getStore = (origin) => {
 };
 
 const getErrorState = (config) => {
-    const namespace = "axios-jwt-error";
+    const namespace = 'axios-jwt-error';
     const errorState = config[namespace] || {};
     errorState.retry = errorState.retry || false;
     errorState.queued = errorState.queued || false;
@@ -121,8 +121,8 @@ const getErrorState = (config) => {
 
 const axiosJwt = (axios, settings) => {
 
-    const authHeaderKey = "Authorization";
-    const authHeaderPrefix = "Bearer ";
+    const authHeaderKey = 'Authorization';
+    const authHeaderPrefix = 'Bearer ';
 
     const defaultSettings = {
         unauthorized: (response) => {
@@ -292,9 +292,9 @@ const axiosJwt = (axios, settings) => {
     }
 };
 
-const SERVER_URL = typeof window != "undefined" ? window.env.SERVER_URL : process.env.SERVER_URL;
-const CLIENT_URL = typeof window != "undefined" ? window.env.SERVER_URL : process.env.SERVER_URL;
-const ENV_MODE = typeof window != "undefined" ? window.env.ENV_MODE : process.env.NODE_ENV;
+const SERVER_URL = typeof window != 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
+const CLIENT_URL = typeof window != 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
+const ENV_MODE = typeof window != 'undefined' ? window.env.ENV_MODE : process.env.NODE_ENV;
 
 const client = axiosJwt(Axios.create({
     baseURL: SERVER_URL,
@@ -303,7 +303,7 @@ const client = axiosJwt(Axios.create({
     },
     httpsAgent: (() => {
 
-        if (ENV_MODE === "development") {
+        if (ENV_MODE === 'development') {
             const httpsAgent = new https.Agent({
                 rejectUnauthorized: false,
             });
@@ -317,9 +317,9 @@ const client = axiosJwt(Axios.create({
 }),
     {
         clientURL: CLIENT_URL,
-        generateTokenCallback: (request, data, requestConfig) => request.post("account/token/generate", data, requestConfig),
-        refreshTokenCallback: (request, data, requestConfig) => request.post("account/token/refresh", data, requestConfig),
-        revokeTokenCallback: (request, data, requestConfig) => request.post("account/token/revoke", data, requestConfig)
+        generateTokenCallback: (request, data, requestConfig) => request.post('account/token/generate', data, requestConfig),
+        refreshTokenCallback: (request, data, requestConfig) => request.post('account/token/refresh', data, requestConfig),
+        revokeTokenCallback: (request, data, requestConfig) => request.post('account/token/revoke', data, requestConfig)
     });
 
 export default client;
