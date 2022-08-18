@@ -21,7 +21,7 @@ export default function Home() {
       <br />
       <br />
       <br />
-      <Link {...constructContextualPath('account/create')}><a>Create Account</a></Link>
+      <Link {...constructContextualPath('account/signup')}><a>Create Account</a></Link>
       <br />
       <br />
       <br />

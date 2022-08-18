@@ -7,19 +7,19 @@ import { matchPath } from '../utils';
 import ChangeAccountDialog from './account/ChangeAccountDialog';
 import ChangePasswordDialog from './account/ChangePasswordDialog';
 import ConfirmAccountDialog from './account/ConfirmAccountDialog';
-import CreateAccountDialog from './account/CreateAccountDialog';
 import ResetPasswordDialog from './account/ResetPasswordDialog';
 import SignInDialog from './account/SignInDialog';
 import SignOutDialog from './account/SignOutDialog';
+import SignUpDialog from './account/SignUpDialog';
 
 const dialogRoutes = [];
 dialogRoutes.push({ pattern: 'account/change', Component: ChangeAccountDialog });
 dialogRoutes.push({ pattern: 'account/password/change', Component: ChangePasswordDialog });
 dialogRoutes.push({ pattern: 'account/confirm', Component: ConfirmAccountDialog });
-dialogRoutes.push({ pattern: 'account/create', Component: CreateAccountDialog });
 dialogRoutes.push({ pattern: 'account/password/reset', Component: ResetPasswordDialog });
 dialogRoutes.push({ pattern: 'account/signin', Component: SignInDialog });
 dialogRoutes.push({ pattern: 'account/signout', Component: SignOutDialog });
+dialogRoutes.push({ pattern: 'account/signup', Component: SignUpDialog });
 
 const DialogRoute = () => {
     const router = useRouter();

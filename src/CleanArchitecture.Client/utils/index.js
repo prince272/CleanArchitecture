@@ -1,3 +1,5 @@
+import { AxiosError } from "axios";
+
 export function warning(cond, message) {
     if (!cond) {
         // eslint-disable-next-line no-console
@@ -124,3 +126,47 @@ function safelyDecodeURIComponent(value, paramName) {
         return value;
     }
 }
+
+// 
+// source: https://github.com/donavon/prevent-default
+export const preventDefault = (cb) => {
+    return (event, ...others) => {
+        event.preventDefault();
+        cb(event, ...others);
+    }
+};
+
+// Axios handling errors
+// source: https://stackoverflow.com/questions/49967779/axios-handling-errors
+export const formatError = (error) => {
+
+    let message = null;
+
+
+    if (error.response) {
+
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        message = error?.response?.data?.title;
+    }
+    else if (error.request) {
+
+        // The request was made but no response was received
+        // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+        // http.ClientRequest in node.js
+
+        if (error.code === AxiosError.ERR_NETWORK) {
+            message = 'No internet connection.';
+        }
+        else {
+            message = 'No response from server.';
+        }
+    }
+    else {
+
+        // Something happened in setting up the request that triggered an Error
+        message = 'Something went wrong.';
+    }
+
+    return message;
+};

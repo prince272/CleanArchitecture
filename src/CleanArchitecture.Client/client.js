@@ -2,7 +2,11 @@ import Cookies from 'js-cookie';
 import { BehaviorSubject } from 'rxjs';
 import QueryString from 'qs';
 import Axios from 'axios';
-import https from 'https';
+import * as https from 'https';
+
+const SERVER_URL = typeof window != 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
+const CLIENT_URL = typeof window != 'undefined' ? window.env.CLIENT_URL : process.env.CLIENT_URL;
+const ENV_MODE = typeof window != 'undefined' ? window.env.ENV_MODE : process.env.NODE_ENV;
 
 const createCookieStorage = (origin) => {
 
@@ -292,11 +296,7 @@ const axiosJwt = (axios, settings) => {
     }
 };
 
-const SERVER_URL = typeof window != 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
-const CLIENT_URL = typeof window != 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
-const ENV_MODE = typeof window != 'undefined' ? window.env.ENV_MODE : process.env.NODE_ENV;
-
-const client = axiosJwt(Axios.create({
+let axios = Axios.create({
     baseURL: SERVER_URL,
     paramsSerializer: params => {
         return QueryString.stringify(params)
@@ -314,12 +314,13 @@ const client = axiosJwt(Axios.create({
 
         return undefined;
     })()
-}),
-    {
-        clientURL: CLIENT_URL,
-        generateTokenCallback: (request, data, requestConfig) => request.post('account/token/generate', data, requestConfig),
-        refreshTokenCallback: (request, data, requestConfig) => request.post('account/token/refresh', data, requestConfig),
-        revokeTokenCallback: (request, data, requestConfig) => request.post('account/token/revoke', data, requestConfig)
-    });
+});
 
-export default client;
+axios = axiosJwt(axios, {
+    clientURL: CLIENT_URL,
+    generateTokenCallback: (request, data, requestConfig) => request.post('account/token/generate', data, requestConfig),
+    refreshTokenCallback: (request, data, requestConfig) => request.post('account/token/refresh', data, requestConfig),
+    revokeTokenCallback: (request, data, requestConfig) => request.post('account/token/revoke', data, requestConfig)
+});
+
+export default axios;

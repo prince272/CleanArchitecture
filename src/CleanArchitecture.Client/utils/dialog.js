@@ -1,15 +1,17 @@
 import { createContext, useContext, useRef, useState } from 'react';
-import { Dialog } from '@mui/material';
+import { Dialog, useMediaQuery, useTheme } from '@mui/material';
 
 // MUI - How to open Dialog imperatively/programmatically
 // source: https://stackoverflow.com/questions/63737526/mui-how-to-open-dialog-imperatively-programmatically
 const DialogContext = createContext();
 
-const DialogContainer = (props) => {
-    const { children, open, onClose, onExited } = props;
+const DialogContainer = ({ children, open, onClose, onExited, ...props }) => {
+
+    const theme = useTheme();
+    const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
-        <Dialog open={open} onClose={onClose} TransitionProps={{ onExited: onExited }}>
+        <Dialog maxWidth="xs" fullScreen={fullScreen} {...props} open={open} onClose={onClose} TransitionProps={{ onExited: onExited }}>
             {children}
         </Dialog>
     );
