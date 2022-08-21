@@ -1,18 +1,9 @@
-import {
-    DialogTitle,
-    DialogContent,
-    Grid,
-    Stack,
-    Box,
-    Button,
-    Typography,
-    Link as MuiLink,
-    Dialog,
-} from '@mui/material';
+import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, TextField, Link as MuiLink, Dialog } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { DialogCloseButton } from '../../components';
 import * as Icons from '@mui/icons-material';
 import PhoneInput from '../../components/PhoneInput';
+import PasswordField from '../../components/PasswordField';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useContextualRouting } from '../../utils/hooks';
@@ -21,12 +12,11 @@ import client from '../../client';
 import { preventDefault, formatError } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
-import PasswordField from '../../components/PasswordField';
 
-const SignInDialog = (props) => {
+const SignUpDialog = (props) => {
     const router = useRouter();
     const { returnPath, constructContextualPath } = useContextualRouting();
-    const [provider, setProvider] = useState(router.query?.provider);
+    const [provider, setProvider] = useState(null);
     const form = useForm();
     const formState = form.formState;
     const [fetcher, setFetcher] = useState({ state: 'idle', data: null });
@@ -38,10 +28,11 @@ const SignInDialog = (props) => {
 
         try {
             const inputs = form.watch();
-            let response = await client.signin(inputs);
+            let response = await client.post('account/register', inputs);
             form.clearErrors();
 
-            closeDialog();
+            const contextualPathParams = constructContextualPath({ pathname: 'account/signin' }, { provider, inputs: JSON.stringify(inputs) });
+            router.replace(contextualPathParams.href, contextualPathParams.as);
         }
         catch (unsafeError) {
             console.error(unsafeError);
@@ -62,26 +53,14 @@ const SignInDialog = (props) => {
     };
 
     const onload = () => {
-
-        const inputs = JSON.parse(router.query?.inputs || null);
-
-        if (inputs) {
-
-            form.reset({
-                username: inputs.username,
-                password: inputs.password
-            });
-
-            onSubmit();
-        }
-        else {
-            form.reset({
-                username: '',
-                password: ''
-            });
-        }
+        form.reset({
+            firstName: '',
+            lastName: '',
+            username: '',
+            password: ''
+        });
     };
-    
+
     const onClose = () => {
         router.push(returnPath);
     };
@@ -91,10 +70,10 @@ const SignInDialog = (props) => {
     return (
         <Dialog {...props} onClose={onClose}>
             <DialogTitle component="div" sx={{ pt: 3, pb: 2, textAlign: "center", }}>
-                <Typography variant="h5" component="h1" gutterBottom>Sign in to your account</Typography>
+                <Typography variant="h5" component="h1" gutterBottom>Create your account</Typography>
                 <Typography textAlign="center" variant="body2" gutterBottom>
                     {{
-                        username: 'Enter your personal credentials'
+                        username: 'Enter your personal information'
                     }[provider] || 'Select the method you want to use'}
                 </Typography>
                 <DialogCloseButton onClose={onClose} />
@@ -103,7 +82,32 @@ const SignInDialog = (props) => {
             <DialogContent sx={{ px: 4, pb: 0 }}>
                 {provider == 'username' ?
                     <Box component={"form"} onSubmit={preventDefault(onSubmit)}>
-                        <Grid container pt={1} pb={4} spacing={4}>
+                        <Grid container pt={1} pb={4} spacing={3}>
+                            <Grid item xs={12} sm={6}>
+                                <Controller
+                                    name="firstName"
+                                    control={form.control}
+                                    render={({ field }) => <TextField {...field}
+                                        label="First name"
+                                        variant="standard"
+                                        error={!!formState.errors.firstName}
+                                        helperText={formState.errors.firstName?.message}
+                                        autoFocus
+                                        fullWidth />}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <Controller
+                                    name="lastName"
+                                    control={form.control}
+                                    render={({ field }) => <TextField {...field}
+                                        label="Last name"
+                                        variant="standard"
+                                        error={!!formState.errors.lastName}
+                                        helperText={formState.errors.lastName?.message}
+                                        fullWidth />}
+                                />
+                            </Grid>
                             <Grid item xs={12}>
                                 <Controller
                                     name="username"
@@ -132,7 +136,7 @@ const SignInDialog = (props) => {
                         </Grid>
                         <Box mb={3}>
                             <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
-                                Sign In
+                                Sign Up
                             </LoadingButton>
                         </Box>
                     </Box> :
@@ -143,10 +147,10 @@ const SignInDialog = (props) => {
                         </Stack>
                     </>
                 }
-                <Typography textAlign="center" pb={4}>Don't have an account yet? <Link {...constructContextualPath('account/signup')} passHref><MuiLink underline="hover">Sign up</MuiLink></Link></Typography>
+                <Typography textAlign="center" pb={4}>Already have an account? <Link {...constructContextualPath('account/signin')} passHref><MuiLink underline="hover">Sign in</MuiLink></Link></Typography>
             </DialogContent>
         </Dialog>
     );
 };
 
-export default SignInDialog;
+export default SignUpDialog;
