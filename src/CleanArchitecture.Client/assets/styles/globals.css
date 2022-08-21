@@ -1,3 +1,11 @@
+
+/* How to hide the eye from a password input in MS Edge and IE */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+
 html,
 body {
   padding: 0;

@@ -6,25 +6,24 @@ import { matchPath } from '../utils';
 
 import ChangeAccountDialog from './account/ChangeAccountDialog';
 import ChangePasswordDialog from './account/ChangePasswordDialog';
-import ConfirmAccountDialog from './account/ConfirmAccountDialog';
+import VerifyAccountDialog from './account/VerifyAccountDialog';
 import ResetPasswordDialog from './account/ResetPasswordDialog';
-import SignInDialog from './account/SignInDialog';
-import SignOutDialog from './account/SignOutDialog';
-import SignUpDialog from './account/SignUpDialog';
+import SignInAccountDialog from './account/SignInAccountDialog';
+import SignOutAccountDialog from './account/SignOutAccountDialog';
+import SignUpAccountDialog from './account/SignUpAccountDialog';
 
 const dialogRoutes = [];
 dialogRoutes.push({ pattern: 'account/change', Component: ChangeAccountDialog });
 dialogRoutes.push({ pattern: 'account/password/change', Component: ChangePasswordDialog });
-dialogRoutes.push({ pattern: 'account/confirm', Component: ConfirmAccountDialog });
+dialogRoutes.push({ pattern: 'account/verify', Component: VerifyAccountDialog });
 dialogRoutes.push({ pattern: 'account/password/reset', Component: ResetPasswordDialog });
-dialogRoutes.push({ pattern: 'account/signin', Component: SignInDialog });
-dialogRoutes.push({ pattern: 'account/signout', Component: SignOutDialog });
-dialogRoutes.push({ pattern: 'account/signup', Component: SignUpDialog });
+dialogRoutes.push({ pattern: 'account/signin', Component: SignInAccountDialog });
+dialogRoutes.push({ pattern: 'account/signout', Component: SignOutAccountDialog });
+dialogRoutes.push({ pattern: 'account/signup', Component: SignUpAccountDialog });
 
 const DialogRoute = () => {
-    const router = useRouter();
     const dialog = useDialog();
-    const { returnPath, contextualPath } = useContextualRouting();
+    const { contextualPath } = useContextualRouting();
 
     useEffect(() => {
 
@@ -37,8 +36,7 @@ const DialogRoute = () => {
 
             if (currentRoute) {
                 const Component = currentRoute.Component;
-                const closeDialog = () => router.push(returnPath);
-                dialog.replace({ onClose: closeDialog, children: <Component {...{ closeDialog }} /> });
+                dialog.replace({ Component });
             }
         }
         else {

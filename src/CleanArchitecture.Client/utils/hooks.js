@@ -30,18 +30,16 @@ export function useContextualRouting() {
   // @NOTE JSON.stringify might be replaced with any hashing solution
   const queryHash = JSON.stringify(watchedQuery);
   const constructContextualPath = useCallback(
-    (url) => {
+    (url, hiddenParams) => {
       url = require('url').format(url);
-      const extraParams = QueryString.parse(url.substring(url.indexOf('?') + 1));
+      const urlParams = QueryString.parse(url.substring(url.indexOf('?') + 1));
 
-      const linkProps = {
+      return {
         as: url,
         href: router.pathname + '?' + QueryString.stringify(
-          Object.assign({}, extraParams, { [RETURN_PATH_QUERY_PARAM]: returnPath })
+          Object.assign({}, { ...(urlParams || {}), ...(hiddenParams || {}) }, { [RETURN_PATH_QUERY_PARAM]: returnPath })
         )
       };
-
-      return linkProps;
     },
     [queryHash, returnPath]
   );

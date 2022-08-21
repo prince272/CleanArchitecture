@@ -426,7 +426,7 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/token/generate")]
-        public async Task<IActionResult> Authenticate([FromBody] CreateAccountTokenForm form)
+        public async Task<IActionResult> Generate([FromBody] CreateAccountTokenForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<CreateAccountTokenValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
@@ -460,7 +460,7 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/{provider}/token/generate")]
-        public async Task<IActionResult> Authenticate([FromRoute] string provider)
+        public async Task<IActionResult> Generate([FromRoute] string provider)
         {
             if (provider == null) return ValidationProblem(title: $"'{nameof(provider)}' is required.");
 

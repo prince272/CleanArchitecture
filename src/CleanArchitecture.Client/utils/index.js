@@ -1,5 +1,18 @@
 import { AxiosError } from "axios";
 
+export const isPhoneFormat = (value) => {
+    function isNullOrWhitespace(input) {
+        return (typeof input === 'undefined' || input == null)
+            || input.replace(/\s/g, '').length < 1;
+    }
+
+    if (isNullOrWhitespace(value))
+        return false;
+
+    const result = new RegExp("^[ 0-9\.\,\+\-]*$").test(value || '');
+    return result;
+};
+
 export function warning(cond, message) {
     if (!cond) {
         // eslint-disable-next-line no-console
@@ -170,3 +183,73 @@ export const formatError = (error) => {
 
     return message;
 };
+
+
+// useCombinedRefs - CodeSandbox
+// source: https://codesandbox.io/s/uhj08?file=/src/App.js:223-537
+export const setRefs = (...refs) => (element) => {
+    refs.forEach((ref) => {
+        if (!ref) {
+            return;
+        }
+
+        // Ref can have two types - a function or an object. We treat each case.
+        if (typeof ref === "function") {
+            return ref(element);
+        }
+
+        ref.current = element;
+    });
+};
+
+// Encrypt and decrypt a string using simple Javascript without using any external library
+// source: https://javascript.tutorialink.com/encrypt-and-decrypt-a-string-using-simple-javascript-without-using-any-external-library/
+export function compressString(string) {
+    string = unescape(encodeURIComponent(string));
+    var newString = '',
+        char, nextChar, combinedCharCode;
+    for (var i = 0; i < string.length; i += 2) {
+        char = string.charCodeAt(i);
+
+        if ((i + 1) < string.length) {
+
+
+            nextChar = string.charCodeAt(i + 1) - 31;
+
+
+            combinedCharCode = char + "" + nextChar.toLocaleString('en', {
+                minimumIntegerDigits: 2
+            });
+
+            newString += String.fromCharCode(parseInt(combinedCharCode, 10));
+
+        } else {
+
+
+            newString += string.charAt(i);
+        }
+    }
+    return btoa(unescape(encodeURIComponent(newString)));
+}
+
+export function decompressString(string) {
+
+    var newString = '',
+        char, codeStr, firstCharCode, lastCharCode;
+    string = decodeURIComponent(escape(atob(string)));
+    for (var i = 0; i < string.length; i++) {
+        char = string.charCodeAt(i);
+        if (char > 132) {
+            codeStr = char.toString(10);
+
+            firstCharCode = parseInt(codeStr.substring(0, codeStr.length - 2), 10);
+
+            lastCharCode = parseInt(codeStr.substring(codeStr.length - 2, codeStr.length), 10) + 31;
+
+            newString += String.fromCharCode(firstCharCode) + String.fromCharCode(lastCharCode);
+        } else {
+            newString += string.charAt(i);
+        }
+    }
+    return newString;
+}

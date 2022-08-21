@@ -1,19 +1,22 @@
-import { createContext, useContext, useRef, useState } from 'react';
-import { Dialog, useMediaQuery, useTheme } from '@mui/material';
+import { createContext, useContext, useState } from 'react';
+import { Backdrop, Fade, useMediaQuery } from '@mui/material';
+import { useTheme } from '@emotion/react';
 
 // MUI - How to open Dialog imperatively/programmatically
 // source: https://stackoverflow.com/questions/63737526/mui-how-to-open-dialog-imperatively-programmatically
 const DialogContext = createContext();
 
-const DialogContainer = ({ children, open, onClose, onExited, ...props }) => {
-
+const DialogContainer = ({ Component, actions, props: { open, disableTransition, ...props } }) => {
     const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+
+    const TransitionComponent = disableTransition ? Fade : undefined;
+    const TransitionProps = disableTransition ? { timeout: 0 } : undefined;
 
     return (
-        <Dialog maxWidth="xs" fullScreen={fullScreen} {...props} open={open} onClose={onClose} TransitionProps={{ onExited: onExited }}>
-            {children}
-        </Dialog>
+        <Backdrop open={open} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+            <Component maxWidth="xs" fullScreen={fullScreen} fullWidth={true} hideBackdrop={true} open={open} onClose={actions.close} {...{ ...props, TransitionComponent, TransitionProps: { onExited: actions.dispose, ...TransitionProps } }} />
+        </Backdrop>
     );
 };
 
@@ -21,30 +24,47 @@ const DialogProvider = ({ children }) => {
 
     const [dialogs, setDialogs] = useState([]);
 
-    const openDialog = (options) => {
-        const dialog = { ...options, open: true };
-        setDialogs((dialogs) => [...dialogs, dialog]);
-    };
-
-    const replaceDialog = (options) => {
-        setDialogs((dialogs) => {
-            const latestDialog = dialogs.pop();
-            if (!latestDialog) {
-                const dialog = { ...options, open: true };
-                return [...dialogs, dialog];
-            }
-            else {
-                const currentDialog = { ...options, open: true };
-                return [...dialogs].concat({ ...latestDialog, ...currentDialog, open: true });
-            }
-        });
+    const openDialog = (newDialog) => {
+        setDialogs((dialogs) => [...dialogs, { ...newDialog, props: { ...newDialog.props, open: true } }]);
     };
 
     const closeDialog = () => {
         setDialogs((dialogs) => {
-            const latestDialog = dialogs.pop();
-            if (!latestDialog) return dialogs;
-            return [...dialogs].concat({ ...latestDialog, open: false });
+            const currentDialog = dialogs.pop();
+            if (!currentDialog) return dialogs;
+
+            const updatedDialogs = [...dialogs].concat({
+                ...currentDialog,
+                props: {
+                    ...currentDialog.props,
+                    disableTransition: false,
+                    open: false
+                }
+            });
+            return updatedDialogs;
+        });
+    };
+
+    const replaceDialog = (newDialog) => {
+        setDialogs((dialogs) => {
+            const currentDialog = dialogs.pop();
+            if (!currentDialog) {
+                return [...dialogs, { ...newDialog, props: { ...newDialog.props, open: true } }];
+            }
+            else {
+
+                const updatedDialog = {
+                    ...currentDialog,
+                    ...newDialog,
+                    props: {
+                        ...newDialog.props,
+                        disableTransition: true,
+                        open: true
+                    }
+                };
+
+                return [...dialogs].concat(updatedDialog);
+            }
         });
     };
 
@@ -52,19 +72,16 @@ const DialogProvider = ({ children }) => {
         setDialogs((dialogs) => dialogs.slice(0, dialogs.length - 1));
     };
 
+    const actions = { open: openDialog, replace: replaceDialog, close: closeDialog, dispose: disposeDialog };
+
     return (
-        <DialogContext.Provider value={{ open: openDialog, replace: replaceDialog, close: closeDialog }}>
+        <DialogContext.Provider value={actions}>
             {children}
-            {dialogs.map((dialogProps, i) => {
-                return (
-                    <DialogContainer
-                        key={i}
-                        onClose={closeDialog}
-                        onExited={disposeDialog}
-                        {...dialogProps}
-                    />
-                );
+
+            {dialogs.map((dialog, i) => {
+                return (<DialogContainer key={i} {...{ ...dialog, actions }} />);
             })}
+
         </DialogContext.Provider>
     )
 };
