@@ -8,7 +8,7 @@ const DialogContext = createContext();
 
 const DialogContainer = ({ Component, actions, props: { open, disableTransition, ...props } }) => {
     const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+    const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     const TransitionComponent = disableTransition ? Fade : undefined;
     const TransitionProps = disableTransition ? { timeout: 0 } : undefined;

@@ -1,50 +1,68 @@
-import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, Link as MuiLink, Dialog } from '@mui/material';
+import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, TextField, Link as MuiLink, Dialog } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { DialogCloseButton } from '../../components';
 import * as Icons from '@mui/icons-material';
 import PhoneInput from '../../components/PhoneInput';
+import PasswordField from '../../components/PasswordField';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useContextualRouting } from '../../utils/hooks';
+import { useEffect, useState, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import client from '../../client';
-import { preventDefault, formatError } from '../../utils';
+import { preventDefault, formatError, isHttpError } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
-import PasswordField from '../../components/PasswordField';
+import { useContextualRouting } from '..';
 
 const SignInDialog = (props) => {
     const router = useRouter();
-    const { returnPath, constructContextualPath } = useContextualRouting();
-    const [provider, setProvider] = useState(router.query?.provider);
+    const returnUrl = router.query.returnUrl || '/';
+    const initialState = JSON.parse(router.query.state || null);
+    const { getPagePath, constructLink } = useContextualRouting();
+    const [provider, setProvider] = useState(initialState?.provider || null);
     const form = useForm();
     const formState = form.formState;
-    const [fetcher, setFetcher] = useState({ state: 'idle', data: null });
+    const [fetcher, setFetcher] = useState({ state: 'idle' });
     const { enqueueSnackbar } = useSnackbar();
 
-    const onSubmit = async () => {
-
-        setFetcher(fetcher => ({ ...fetcher, state: 'submitting' }));
+    const onSubmit = async (inputs) => {
 
         try {
-            const inputs = form.watch();
-            let response = await client.signin(inputs);
+            setFetcher(fetcher => ({ ...fetcher, state: 'submitting' }));
+
+            await client.signin(inputs);
             form.clearErrors();
 
-            closeDialog();
+            const link = constructLink(returnUrl);
+            router.push(link);
         }
-        catch (unsafeError) {
-            console.error(unsafeError);
+        catch (error) {
+            console.error(error);
 
-            const error = (typeof unsafeError == 'object') ? { ...unsafeError } : {};
+            if (isHttpError(error)) {
+                const { reason } = error?.response?.data || {};
 
-            form.clearErrors();
-            form.handleSubmit(() => {
-                const inputErrors = error?.response?.data?.errors || {};
-                Object.entries(inputErrors).forEach(([name, message]) => form.setError(name, { type: 'server', message: message?.join('\n') }));
-            })();
+                if (reason == 'requiresVerification') {
 
-            enqueueSnackbar(formatError(error), { variant: 'error' });
+                    const link = constructLink({ pathname: 'account/verify', query: { returnUrl: router.asPath } }, {
+                        state: JSON.stringify({ inputs, provider })
+                    });
+
+                    router.push(link.href, link.as);
+                }
+                else {
+
+                    form.clearErrors();
+                    form.handleSubmit(() => {
+                        const inputErrors = error?.response?.data?.errors || {};
+                        Object.entries(inputErrors).forEach(([name, message]) => form.setError(name, { type: 'server', message: message?.join('\n') }));
+                    })();
+
+                    enqueueSnackbar(formatError(error), { variant: 'error' });
+                }
+            }
+            else {
+                enqueueSnackbar(formatError(error), { variant: 'error' });
+            }
         }
         finally {
             setFetcher(fetcher => ({ ...fetcher, state: 'idle' }));
@@ -53,27 +71,16 @@ const SignInDialog = (props) => {
 
     const onload = () => {
 
-        const inputs = JSON.parse(router.query?.inputs || null);
-
-        if (inputs) {
-
+        if (initialState) {
             form.reset({
-                username: inputs.username,
-                password: inputs.password
-            });
-
-            onSubmit();
-        }
-        else {
-            form.reset({
-                username: '',
-                password: ''
+                username: initialState.inputs.username,
+                password: initialState.inputs.password
             });
         }
     };
 
     const onClose = () => {
-        router.push(returnPath);
+        router.push(getPagePath());
     };
 
     useEffect(() => { onload(); }, []);
@@ -81,10 +88,10 @@ const SignInDialog = (props) => {
     return (
         <Dialog {...props} onClose={onClose}>
             <DialogTitle component="div" sx={{ pt: 3, pb: 2, textAlign: "center", }}>
-                <Typography variant="h5" component="h1" gutterBottom>Sign in to your account</Typography>
-                <Typography textAlign="center" variant="body2" gutterBottom>
+                <Typography variant="h5" component="h1" gutterBottom>Sign in to account</Typography>
+                <Typography variant="body2" gutterBottom>
                     {{
-                        username: 'Enter your personal credentials'
+                        username: 'Enter your credentials'
                     }[provider] || 'Select the method you want to use'}
                 </Typography>
                 <DialogCloseButton onClose={onClose} />
@@ -92,8 +99,8 @@ const SignInDialog = (props) => {
 
             <DialogContent sx={{ px: 4, pb: 0 }}>
                 {provider == 'username' ?
-                    <Box component={"form"} onSubmit={preventDefault(onSubmit)}>
-                        <Grid container pt={1} pb={4} spacing={4}>
+                    <Box component={"form"} onSubmit={preventDefault(() => onSubmit(form.watch()))}>
+                        <Grid container pt={1} pb={4} spacing={3}>
                             <Grid item xs={12}>
                                 <Controller
                                     name="username"
@@ -122,7 +129,7 @@ const SignInDialog = (props) => {
                         </Grid>
                         <Box mb={3}>
                             <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
-                                Sign In
+                                Sign Up
                             </LoadingButton>
                         </Box>
                     </Box> :
@@ -133,7 +140,7 @@ const SignInDialog = (props) => {
                         </Stack>
                     </>
                 }
-                <Typography textAlign="center" pb={4}>Don't have an account yet? <Link {...constructContextualPath('account/signup')} passHref><MuiLink underline="hover">Sign up</MuiLink></Link></Typography>
+                <Typography variant="body2" textAlign="center" pb={4}>Don't have an account? <Link {...constructLink({ pathname: 'account/signup', query: { returnUrl } })} passHref><MuiLink underline="hover">Sign up</MuiLink></Link></Typography>
             </DialogContent>
         </Dialog>
     );

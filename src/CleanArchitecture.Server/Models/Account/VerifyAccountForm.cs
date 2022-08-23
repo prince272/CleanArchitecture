@@ -17,6 +17,8 @@ namespace CleanArchitecture.Server.Models.Account
 
         public string Username { get; set; } = null!;
 
+        public VerifyAccountReason Reason { get; set; }
+
         string IVerifyAccountForm.Code { get; set; } = null!;
     }
 
@@ -24,7 +26,15 @@ namespace CleanArchitecture.Server.Models.Account
     {
         public string Username { get; set; } = null!;
 
+        public VerifyAccountReason Reason { get; set; }
+
         public string Code { get; set; } = null!;
+    }
+
+    public enum VerifyAccountReason
+    {
+        Verify,
+        Change
     }
 
     public class SendVerifyAccountValidator : AbstractValidator<SendVerifyAccountForm>

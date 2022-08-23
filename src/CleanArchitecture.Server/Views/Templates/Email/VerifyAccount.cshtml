@@ -1,7 +1,7 @@
 ﻿@model (User User, IVerifyAccountForm Form, ContactType FormUsernameType)
 
 <h4>Hi @(Model.User.FirstName),</h4>
-<p>Kindly use this verification code <b>@(Model.Form.Code)</b> to change your @(Model.FormUsernameType.Humanize(LetterCasing.LowerCase)).</p>
+<p>Kindly use this verification code <b>@(Model.Form.Code)</b> to verify your @(Model.FormUsernameType.Humanize(LetterCasing.LowerCase)).</p>
 
 <p>In case you were not trying to access your Account & you're seeing this email, please follow the instructions below:</p>
 <ul>

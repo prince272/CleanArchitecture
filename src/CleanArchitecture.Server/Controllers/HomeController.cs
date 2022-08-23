@@ -61,10 +61,10 @@ namespace CleanArchitecture.Server.Controllers
         {
             var jsonOptions = HttpContext.RequestServices.GetRequiredService<IOptions<JsonOptions>>()?.Value;
 
-            string? RelovePropertyNamingPolicy(string propertyName)
-                => jsonOptions?.JsonSerializerOptions.DictionaryKeyPolicy?.ConvertName(propertyName);
+            string ResolvePropertyNamingPolicy(string propertyName)
+                => jsonOptions?.JsonSerializerOptions.DictionaryKeyPolicy?.ConvertName(propertyName) ?? propertyName;
 
-            var problemDetails = new ValidationProblemDetails(errors.ToDictionary(k => RelovePropertyNamingPolicy(k.Key) ?? k.Key, k => k.Value))
+            var problemDetails = new ValidationProblemDetails(errors.ToDictionary(k => ResolvePropertyNamingPolicy(k.Key), k => k.Value))
             {
                 Detail = detail,
                 Instance = instance,
@@ -78,7 +78,7 @@ namespace CleanArchitecture.Server.Controllers
             {
                 foreach (var extension in extensions)
                 {
-                    problemDetails.Extensions.Add(extension);
+                    problemDetails.Extensions.Add(ResolvePropertyNamingPolicy(extension.Key), extension.Value);
                 }
             }
 

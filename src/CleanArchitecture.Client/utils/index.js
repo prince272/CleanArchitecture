@@ -140,6 +140,30 @@ function safelyDecodeURIComponent(value, paramName) {
     }
 }
 
+// JavaScript snippet: Remove base URL from link
+// source: https://www.wkoorts.com/2012/10/09/javascript-snippet-remove-base-url-from-link/
+export function getPath(url) {
+    /*
+     * Replace base URL in given string, if it exists, and return the result.
+     *
+     * e.g. "http://localhost:8000/api/v1/blah/" becomes "/api/v1/blah/"
+     *      "/api/v1/blah/" stays "/api/v1/blah/"
+     */
+    let baseUrlPattern = /^(?<Protocol>\w+):\/\/(?<Domain>[\w@][\w.:@]+)*/;
+    let result = "";
+
+    let match = baseUrlPattern.exec(url);
+    if (match != null) {
+        result = match[0];
+    }
+
+    if (result.length > 0) {
+        url = url.replace(result, "");
+    }
+
+    return url;
+}
+
 // 
 // source: https://github.com/donavon/prevent-default
 export const preventDefault = (cb) => {
@@ -178,12 +202,15 @@ export const formatError = (error) => {
     else {
 
         // Something happened in setting up the request that triggered an Error
-        message = 'Something went wrong.';
+        message = 'A client-side error occurred.';
     }
 
     return message;
 };
 
+export function isHttpError(payload) {
+    return payload !== null && typeof payload === 'object' && (payload.isAxiosError === true);
+}
 
 // useCombinedRefs - CodeSandbox
 // source: https://codesandbox.io/s/uhj08?file=/src/App.js:223-537
@@ -252,4 +279,36 @@ export function decompressString(string) {
         }
     }
     return newString;
+}
+
+export const addQueryString = (uri, params) => {
+    let anchorIndex = uri.indexOf('#');
+    let uriToBeAppended = uri;
+    let anchorText = '';
+
+    // If there is an anchor, then the query string must be inserted before its first occurrence.
+    if (anchorIndex != -1) {
+        anchorText = uri.substring(anchorIndex);
+        uriToBeAppended = uri.substring(0, anchorIndex);
+    }
+
+    let queryIndex = uriToBeAppended.indexOf('?');
+    let hasQuery = queryIndex != -1;
+
+    let sb = [];
+    sb.push(uriToBeAppended);
+
+    Object.entries(params).forEach(([key, value], index) => {
+        if (value != null) {
+            sb.push(hasQuery ? '&' : '?');
+            sb.push(encodeURIComponent(key));
+            sb.push('=');
+            sb.push(encodeURIComponent(value));
+            hasQuery = true;
+        }
+    });
+
+    sb.push(anchorText);
+    const result = sb.join('');
+    return result;
 }

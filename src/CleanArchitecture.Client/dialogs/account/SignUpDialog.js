@@ -6,44 +6,48 @@ import PhoneInput from '../../components/PhoneInput';
 import PasswordField from '../../components/PasswordField';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useContextualRouting } from '../../utils/hooks';
 import { Controller, useForm } from 'react-hook-form';
 import client from '../../client';
-import { preventDefault, formatError } from '../../utils';
+import { preventDefault, formatError, isHttpError, addQueryString } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
+import { useContextualRouting } from '..';
 
 const SignUpDialog = (props) => {
     const router = useRouter();
-    const { returnPath, constructContextualPath } = useContextualRouting();
+    const returnUrl = router.query.returnUrl || '/';
+    const { getPagePath, constructLink } = useContextualRouting();
     const [provider, setProvider] = useState(null);
     const form = useForm();
     const formState = form.formState;
-    const [fetcher, setFetcher] = useState({ state: 'idle', data: null });
+    const [fetcher, setFetcher] = useState({ state: 'idle' });
     const { enqueueSnackbar } = useSnackbar();
 
-    const onSubmit = async () => {
-
-        setFetcher(fetcher => ({ ...fetcher, state: 'submitting' }));
+    const onSubmit = async (inputs) => {
 
         try {
-            const inputs = form.watch();
-            let response = await client.post('account/register', inputs);
+            setFetcher(fetcher => ({ ...fetcher, state: 'submitting' }));
+
+            await client.post('account/register', inputs);
             form.clearErrors();
 
-            const contextualPathParams = constructContextualPath({ pathname: 'account/signin' }, { provider, inputs: JSON.stringify(inputs) });
-            router.replace(contextualPathParams.href, contextualPathParams.as);
+            const link = constructLink({ pathname: 'account/verify', query: { returnUrl: addQueryString('account/signin', { returnUrl }) } }, {
+                state: JSON.stringify({ inputs, provider })
+            });
+
+            router.push(link.href, link.as);
         }
-        catch (unsafeError) {
-            console.error(unsafeError);
+        catch (error) {
+            console.error(error);
+            
+            if (isHttpError(error)) {
 
-            const error = (typeof unsafeError == 'object') ? { ...unsafeError } : {};
-
-            form.clearErrors();
-            form.handleSubmit(() => {
-                const inputErrors = error?.response?.data?.errors || {};
-                Object.entries(inputErrors).forEach(([name, message]) => form.setError(name, { type: 'server', message: message?.join('\n') }));
-            })();
+                form.clearErrors();
+                form.handleSubmit(() => {
+                    const inputErrors = error?.response?.data?.errors || {};
+                    Object.entries(inputErrors).forEach(([name, message]) => form.setError(name, { type: 'server', message: message?.join('\n') }));
+                })();
+            }
 
             enqueueSnackbar(formatError(error), { variant: 'error' });
         }
@@ -62,7 +66,7 @@ const SignUpDialog = (props) => {
     };
 
     const onClose = () => {
-        router.push(returnPath);
+        router.push(getPagePath());
     };
 
     useEffect(() => { onload(); }, []);
@@ -70,8 +74,8 @@ const SignUpDialog = (props) => {
     return (
         <Dialog {...props} onClose={onClose}>
             <DialogTitle component="div" sx={{ pt: 3, pb: 2, textAlign: "center", }}>
-                <Typography variant="h5" component="h1" gutterBottom>Create your account</Typography>
-                <Typography textAlign="center" variant="body2" gutterBottom>
+                <Typography variant="h5" component="h1" gutterBottom>Create an account</Typography>
+                <Typography variant="body2" gutterBottom>
                     {{
                         username: 'Enter your personal information'
                     }[provider] || 'Select the method you want to use'}
@@ -81,7 +85,7 @@ const SignUpDialog = (props) => {
 
             <DialogContent sx={{ px: 4, pb: 0 }}>
                 {provider == 'username' ?
-                    <Box component={"form"} onSubmit={preventDefault(onSubmit)}>
+                    <Box component={"form"} onSubmit={preventDefault(() => onSubmit(form.watch()))}>
                         <Grid container pt={1} pb={4} spacing={3}>
                             <Grid item xs={12} sm={6}>
                                 <Controller
@@ -147,7 +151,7 @@ const SignUpDialog = (props) => {
                         </Stack>
                     </>
                 }
-                <Typography textAlign="center" pb={4}>Already have an account? <Link {...constructContextualPath('account/signin')} passHref><MuiLink underline="hover">Sign in</MuiLink></Link></Typography>
+                <Typography variant="body2" textAlign="center" pb={4}>Already have an account? <Link  {...constructLink({ pathname: 'account/signin', query: { returnUrl } })} passHref><MuiLink underline="hover">Sign in</MuiLink></Link></Typography>
             </DialogContent>
         </Dialog>
     );

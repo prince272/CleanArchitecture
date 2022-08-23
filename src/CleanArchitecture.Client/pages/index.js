@@ -1,19 +1,30 @@
 import Head from 'next/head';
 import Image from 'next/image';
 import { forwardRef, useEffect, useState } from 'react';
-import { useContextualRouting } from '../utils/hooks';
+import { useContextualRouting } from '../dialogs';
 import styles from '../assets/styles/Home.module.css';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogContentText, DialogTitle, Fade } from '@mui/material';
+import { Dialog, DialogContent, DialogContentText, DialogTitle, Fade, FormControl, MenuItem, Select } from '@mui/material';
 
 export default function Home() {
 
-  const { constructContextualPath } = useContextualRouting();
+  const { constructLink } = useContextualRouting();
 
   return (
     <div className={styles.container}>
 
-
+<FormControl fullWidth>
+  <Select
+    labelId="demo-simple-select-label"
+    id="demo-simple-select"
+    value={10}
+    label="Age"
+  >
+    <MenuItem value={10}>Ten</MenuItem>
+    <MenuItem value={20}>Twenty</MenuItem>
+    <MenuItem value={30}>Thirty</MenuItem>
+  </Select>
+</FormControl>
 
       <Head>
         <title>Create Next App</title>
@@ -22,17 +33,18 @@ export default function Home() {
       </Head>
       <Link href="/"><a>Home</a></Link>
       <br />
+      <Link {...constructLink("account/signin")}><a>Sign In</a></Link>
+      <br />
+      <Link {...constructLink("account/signup")}><a>Sign Up</a></Link>
+      <br />
+      <Link {...constructLink("account/password/change")}><a>Change Password</a></Link>
+      <br />
+      <Link {...constructLink("account/verify")}><a>Verify Account</a></Link>
       <br />
       <br />
-      <Link {...constructContextualPath('account/signup')}><a>Sign Up</a></Link>
+      <Link {...constructLink("account/password/reset")}><a>Reset Password</a></Link>
       <br />
       <br />
-      <br />
-      <Link {...constructContextualPath('account/signin')}><a>Sign In</a></Link>
-      <br />
-      <br />
-      <br />
-      <Link {...constructContextualPath('account/verify')}><a>Verify Account</a></Link>
 
       <main className={styles.main}>
         <h1 className={styles.title}>

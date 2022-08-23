@@ -4,6 +4,7 @@ import flags from 'react-phone-number-input/flags';
 import { forwardRef } from 'react';
 import { TextField } from '@mui/material';
 import { isPhoneFormat } from '../utils';
+import { CountrySelectWithIcon as CountrySelect }  from './CountrySelect';
 
 const PhoneTextField = forwardRef(({ value, value2, onChange, onChange2, onKeyDown, ...props }, inputRef) => {
   return (
@@ -28,21 +29,21 @@ const PhoneInput = forwardRef(({ value, onChange, ...props }, ref) => {
   return (
     <div>
       <ReactPhoneInput
-
+      
         flags={flags}
         addInternationalOption={false}
         international={false}
         withCountryCallingCode={false}
         defaultCountry="GH"
+        countrySelectComponent={CountrySelect}
         {...props}
-
+        readOnly={props?.InputProps?.readOnly}
         {...{
           value: isPhoneFormat(value2) ? value : undefined,
           value2,
           onChange,
           onChange2: onChange
         }}
-
         inputComponent={PhoneTextField}
         ref={ref}
       />

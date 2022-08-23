@@ -109,19 +109,42 @@ namespace CleanArchitecture.Server.Controllers
             return Ok();
         }
 
-        [HttpPost("account/verify")]
+        [HttpPost("account/verify/send")]
         public async Task<IActionResult> SendVerifyAccount([FromBody] SendVerifyAccountForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<SendVerifyAccountValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
-            var user = await _userManager.FindByUsernameAsync(form.Username);
-            if (user == null)
+            User? user = null;
+
+            if (form.Reason == VerifyAccountReason.Change)
             {
-                var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
-                return ValidationProblem(errors);
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
+
+                user = await _userManager.FindByUsernameAsync(form.Username);
+
+                if (user != null)
+                {
+                    var errors = new Dictionary<string, string[]>();
+                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is already registered.");
+                    return ValidationProblem(errors);
+                }
+
+                user = currentUser;
             }
+            else if (form.Reason == VerifyAccountReason.Verify)
+            {
+                user = await _userManager.FindByUsernameAsync(form.Username);
+
+                if (user == null)
+                {
+                    var errors = new Dictionary<string, string[]>();
+                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                    return ValidationProblem(errors);
+                }
+            }
+            else throw new InvalidOperationException();
 
             var formUsernameType = ContactHelper.Switch(form.Username);
 
@@ -162,19 +185,42 @@ namespace CleanArchitecture.Server.Controllers
             return Ok();
         }
 
-        [HttpPut("account/verify")]
+        [HttpPost("account/verify")]
         public async Task<IActionResult> VerifyAccount([FromBody] VerifyAccountForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<VerifyAccountValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
-            var user = await _userManager.FindByUsernameAsync(form.Username);
-            if (user == null)
+            User? user = null;
+
+            if (form.Reason == VerifyAccountReason.Change)
             {
-                var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
-                return ValidationProblem(errors);
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
+
+                user = await _userManager.FindByUsernameAsync(form.Username);
+
+                if (user != null)
+                {
+                    var errors = new Dictionary<string, string[]>();
+                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is already registered.");
+                    return ValidationProblem(errors);
+                }
+
+                user = currentUser;
             }
+            else if (form.Reason == VerifyAccountReason.Verify)
+            {
+                user = await _userManager.FindByUsernameAsync(form.Username);
+
+                if (user == null)
+                {
+                    var errors = new Dictionary<string, string[]>();
+                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                    return ValidationProblem(errors);
+                }
+            }
+            else throw new InvalidOperationException();
 
             var result = default(IdentityResult);
 
@@ -202,7 +248,7 @@ namespace CleanArchitecture.Server.Controllers
 
         [Authorize]
         [HttpPost("account/change")]
-        public async Task<IActionResult> SendChangeAccount([FromBody] SendVerifyAccountForm form)
+        public async Task<IActionResult> ChangeAccount([FromBody] SendVerifyAccountForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<SendVerifyAccountValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
@@ -221,104 +267,16 @@ namespace CleanArchitecture.Server.Controllers
 
             var formUsernameType = ContactHelper.Switch(form.Username);
 
-            switch (formUsernameType)
+            return formUsernameType switch
             {
-                case ContactType.EmailAddress:
-                    {
-                        ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangeEmailTokenAsync(currentUser, form.Username);
-
-                        var message = new
-                        {
-                            From = _appSettings.Value.Mailing.Accounts["Support"],
-                            To = form.Username,
-                            Subject = $"Change Your {formUsernameType.Humanize(LetterCasing.Title)}",
-                            Body = await _viewRenderer.RenderToStringAsync("Email/ChangeAccount", (currentUser, (IVerifyAccountForm)form, formUsernameType))
-                        };
-
-                        await _emailSender.SendAsync(message.From, message.To, message.Subject, message.Body);
-                    }
-                    break;
-                case ContactType.PhoneNumber:
-                    {
-                        ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangePhoneNumberTokenAsync(currentUser, form.Username);
-
-                        var message = new
-                        {
-                            PhoneNumber = form.Username,
-                            Body = HtmlHelper.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/ChangeAccount", (currentUser, (IVerifyAccountForm)form, formUsernameType)))
-                        };
-
-                        await _smsSender.SendAsync(message.PhoneNumber, message.Body);
-                    }
-                    break;
-
-                default: throw new InvalidOperationException();
-            }
-
-            return Ok();
+                ContactType.EmailAddress => Ok(),
+                ContactType.PhoneNumber => Ok(),
+                _ => throw new InvalidOperationException(),
+            };
         }
 
-        private async Task<ProfileModel> GetProfileModelAsync(User user)
-        {
-            if (user == null) throw new ArgumentNullException(nameof(user));
 
-            var profile = _mapper.Map<ProfileModel>(user);
-            profile.Roles = (await _userManager.GetRolesAsync(user)).ToDictionary(key => key, value => value.Humanize());
-            return profile;
-        }
-
-        [Authorize]
-        [HttpGet("account/profile")]
-        public async Task<IActionResult> GetProfile()
-        {
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
-            return Ok(await GetProfileModelAsync(currentUser));
-        }
-
-        [Authorize]
-        [HttpPut("account/change")]
-        public async Task<IActionResult> ChangeAccount([FromBody] VerifyAccountForm form)
-        {
-            var formState = await HttpContext.RequestServices.GetRequiredService<VerifyAccountValidator>().ValidateAsync(form);
-            if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
-
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
-
-            var user = await _userManager.FindByUsernameAsync(form.Username);
-
-            if (user != null)
-            {
-                var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is already registered.");
-                return ValidationProblem(errors);
-            }
-
-            var formUsernameType = ContactHelper.Switch(form.Username);
-            IdentityResult result;
-
-            switch (formUsernameType)
-            {
-                case ContactType.EmailAddress: result = await _userManager.ChangeEmailAsync(currentUser, currentUser.Email, form.Code); break;
-                case ContactType.PhoneNumber: result = await _userManager.ChangePhoneNumberAsync(currentUser, currentUser.PhoneNumber, form.Code); break;
-                default: throw new InvalidOperationException();
-            }
-
-            if (!result.Succeeded)
-            {
-                var errors = new Dictionary<string, string[]>();
-
-                if (result.Errors.Any(_ => _.Code == "InvalidToken"))
-                    errors.Add(() => form.Code, $"'{nameof(form.Code).Humanize()}' is not valid.");
-
-                return ValidationProblem(errors, detail: result.Errors.Select(_ => _.Description).Humanize());
-            }
-
-            return Ok();
-        }
-
-        [HttpPost("account/password/reset")]
+        [HttpPost("account/password/reset/send")]
         public async Task<IActionResult> SendResetPassword([FromBody] SendResetPasswordForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<SendResetPasswordValidator>().ValidateAsync(form);
@@ -371,7 +329,7 @@ namespace CleanArchitecture.Server.Controllers
             return Ok();
         }
 
-        [HttpPut("account/password/reset")]
+        [HttpPost("account/password/reset")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<ResetPasswordValidator>().ValidateAsync(form);
@@ -425,6 +383,24 @@ namespace CleanArchitecture.Server.Controllers
             return Ok();
         }
 
+        [Authorize]
+        [HttpGet("account/profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
+            return Ok(await GetProfileModelAsync(currentUser));
+        }
+
+        private async Task<ProfileModel> GetProfileModelAsync(User user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            var profile = _mapper.Map<ProfileModel>(user);
+            profile.Roles = (await _userManager.GetRolesAsync(user)).ToDictionary(key => key, value => value.Humanize());
+            return profile;
+        }
+
         [HttpPost("account/token/generate")]
         public async Task<IActionResult> Generate([FromBody] CreateAccountTokenForm form)
         {
@@ -440,19 +416,23 @@ namespace CleanArchitecture.Server.Controllers
                 return ValidationProblem(errors);
             }
 
+            if (!await _userManager.CheckPasswordAsync(user, form.Password))
+            {
+                var errors = new Dictionary<string, string[]>();
+                errors.Add(() => form.Password, $"'{ContactHelper.Switch(form.Password).Humanize()}' is not correct.");
+                return ValidationProblem(errors);
+            }
+
             if (!user.EmailConfirmed && !user.PhoneNumberConfirmed)
             {
                 var errors = new Dictionary<string, string[]>();
                 errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is not confirmed.");
-                return ValidationProblem(errors);
+                return ValidationProblem(errors, extensions: new Dictionary<string, object?>()
+                {
+                    ["Reason"] = SignInReason.RequiresVerification,
+                });
             }
 
-            if (!await _userManager.CheckPasswordAsync(user, form.Password))
-            {
-                var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Password).Humanize()}' is not correct.");
-                return ValidationProblem(errors);
-            }
 
             var data = _mapper.Map<BearerTokenModel>(await _bearerTokenProvider.GenerateTokenAsync(user));
             data.User = await GetProfileModelAsync(user);
