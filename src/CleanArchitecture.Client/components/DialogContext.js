@@ -88,14 +88,14 @@ const DialogProvider = ({ children }) => {
 
 const DialogConsumer = ({ children }) => {
     return (
-        <CountContext.Consumer>
+        <DialogContext.Consumer>
             {context => {
                 if (context === undefined) {
                     throw new Error('DialogConsumer must be used within a DialogProvider')
                 }
                 return children(context)
             }}
-        </CountContext.Consumer>
+        </DialogContext.Consumer>
     )
 };
 
@@ -107,4 +107,5 @@ const useDialog = () => {
     return context
 };
 
+export default DialogContext;
 export { DialogProvider, DialogConsumer, useDialog };

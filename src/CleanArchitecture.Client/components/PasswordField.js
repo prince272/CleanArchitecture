@@ -39,4 +39,6 @@ const PasswordField = forwardRef((props, ref) => {
     );
 });
 
+PasswordField.displayName = 'PhoneField';
+
 export default PasswordField;

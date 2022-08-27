@@ -1,22 +1,18 @@
-import Cookies from 'js-cookie';
-import { BehaviorSubject } from 'rxjs';
 import QueryString from 'qs';
 import Axios from 'axios';
 import * as https from 'https';
+import { BehaviorSubject } from 'rxjs';
+import { getCookie, setCookie, deleteCookie } from 'cookies-next';
 
-const SERVER_URL = typeof window != 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
-const CLIENT_URL = typeof window != 'undefined' ? window.env.CLIENT_URL : process.env.CLIENT_URL;
-const ENV_MODE = typeof window != 'undefined' ? window.env.ENV_MODE : process.env.NODE_ENV;
+const createCookieStorage = ({ clientURL, server }) => {
 
-const createCookieStorage = (origin) => {
-
-    const cookieURL = new URL(origin);
+    const cookieURL = new URL(clientURL);
     const cookieDomain = cookieURL.hostname;
     const cookieSecure = cookieURL.protocol === 'https';
 
     return {
         get: (key) => {
-            const itemStr = Cookies.get(key);
+            const itemStr = getCookie(key, { ...server, });
             // if the item doesn't exist, return null
             if (!itemStr) {
                 return null;
@@ -32,25 +28,27 @@ const createCookieStorage = (origin) => {
                 value
             };
 
-            Cookies.set(key, JSON.stringify(item), {
-                expires: new Date(now.getTime() + ttl),
-                domain: cookieDomain,
-                secure: cookieSecure,
+            setCookie(key, JSON.stringify(item), {
+                ...server, ... {
+                    expires: new Date(now.getTime() + ttl),
+                    domain: cookieDomain,
+                    secure: cookieSecure,
+                }
             });
         },
         remove: (key) => {
-            Cookies.remove(key);
+            deleteCookie(key, { ...server, });
         }
     };
 };
 
-const getStore = (origin) => {
+const getUserStore = (settings) => {
     const accessTokenStorageKey = `_jwt_access_token_storage_${process.env.NODE_ENV}`;
     const refreshTokenStorageKey = `_jwt_refresh_token_storage_${process.env.NODE_ENV}`;
     const userStorageKey = `_jwt_user_storage_${process.env.NODE_ENV}`;
 
-    const storage = createCookieStorage(origin);
-    const userSubject = new BehaviorSubject(storage.get(userStorageKey));
+    const storage = createCookieStorage(settings);
+    const subject = new BehaviorSubject(storage.get(userStorageKey));
 
     const getAccessToken = () => {
         return storage.get(accessTokenStorageKey);
@@ -76,18 +74,14 @@ const getStore = (origin) => {
         storage.remove(refreshTokenStorageKey);
     };
 
-    const getUser = () => {
-        return userSubject.getValue();
-    };
-
     const setUser = (value, ttl) => {
         storage.set(userStorageKey, value, ttl);
-        userSubject.next(value);
+        subject.next(value);
     };
 
     const removeUser = () => {
         storage.remove(userStorageKey);
-        userSubject.next(null);
+        subject.next(null);
     };
 
     const clear = () => {
@@ -105,11 +99,10 @@ const getStore = (origin) => {
         setRefreshToken,
         removeRefreshToken,
 
-        getUser,
         setUser,
         removeUser,
 
-        userSubject,
+        subject,
         clear
     };
 };
@@ -136,7 +129,7 @@ const axiosJwt = (axios, settings) => {
 
     settings = Object.assign({}, defaultSettings, settings || {});
 
-    const store = getStore(settings.clientURL);
+    const store = getUserStore(settings);
 
     let refreshing = false;
     let queue = [];
@@ -163,7 +156,7 @@ const axiosJwt = (axios, settings) => {
     axios.interceptors.request.use((config) => {
         const accessToken = store.getAccessToken();
         const refreshToken = store.getRefreshToken();
-        const user = store.getUser();
+        const user = store.subject.getValue();
 
         if (accessToken && refreshToken && user) {
             config.headers[authHeaderKey] = `${authHeaderPrefix}${accessToken}`;
@@ -262,8 +255,7 @@ const axiosJwt = (axios, settings) => {
     return {
         ...axios,
         store,
-
-        user: store.userSubject,
+        
         signin: (data, requestConfig) => {
             return settings.generateTokenCallback(axios, data, requestConfig)
                 .then((response) => {
@@ -296,31 +288,40 @@ const axiosJwt = (axios, settings) => {
     }
 };
 
-let axios = Axios.create({
-    baseURL: SERVER_URL,
-    paramsSerializer: params => {
-        return QueryString.stringify(params)
-    },
-    httpsAgent: (() => {
+const SERVER_URL = typeof window !== 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
+const CLIENT_URL = typeof window !== 'undefined' ? window.env.CLIENT_URL : process.env.CLIENT_URL;
+const ENV_MODE = typeof window !== 'undefined' ? window.env.ENV_MODE : process.env.NODE_ENV;
 
-        if (ENV_MODE === 'development') {
-            const httpsAgent = new https.Agent({
-                rejectUnauthorized: false,
-            });
-            // eslint-disable-next-line no-console
-            console.log(ENV_MODE, `RejectUnauthorized is disabled.`);
-            return httpsAgent;
-        }
+const createClient = (settings) => {
+    let axios = Axios.create({
+        baseURL: SERVER_URL,
+        paramsSerializer: params => {
+            return QueryString.stringify(params)
+        },
+        httpsAgent: (() => {
 
-        return undefined;
-    })()
-});
+            if (ENV_MODE === 'development') {
+                const httpsAgent = new https.Agent({
+                    rejectUnauthorized: false,
+                });
+                // eslint-disable-next-line no-console
+                console.log(ENV_MODE, `RejectUnauthorized is disabled.`);
+                return httpsAgent;
+            }
 
-axios = axiosJwt(axios, {
-    clientURL: CLIENT_URL,
-    generateTokenCallback: (request, data, requestConfig) => request.post('account/token/generate', data, requestConfig),
-    refreshTokenCallback: (request, data, requestConfig) => request.post('account/token/refresh', data, requestConfig),
-    revokeTokenCallback: (request, data, requestConfig) => request.post('account/token/revoke', data, requestConfig)
-});
+            return undefined;
+        })()
+    });
 
-export default axios;
+    axios = axiosJwt(axios, {
+        clientURL: CLIENT_URL,
+        generateTokenCallback: (request, data, requestConfig) => request.post('/account/token/generate', data, requestConfig),
+        refreshTokenCallback: (request, data, requestConfig) => request.post('/account/token/refresh', data, requestConfig),
+        revokeTokenCallback: (request, data, requestConfig) => request.post('/account/token/revoke', data, requestConfig),
+        ...settings
+    });
+
+    return axios;
+};
+
+export { createClient };

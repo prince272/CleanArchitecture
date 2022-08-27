@@ -1,24 +1,23 @@
 import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, TextField, Link as MuiLink, Dialog } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { DialogCloseButton } from '../../components';
+import { DialogCloseButton, PasswordField, PhoneField, useClient } from '../../components/';
 import * as Icons from '@mui/icons-material';
-import PhoneInput from '../../components/PhoneInput';
-import PasswordField from '../../components/PasswordField';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import client from '../../client';
 import { preventDefault, formatError, isHttpError } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { useContextualRouting } from '..';
 
+
 const SignInDialog = (props) => {
     const router = useRouter();
+    const client = useClient();
     const returnUrl = router.query.returnUrl || '/';
-    const initialState = JSON.parse(router.query.state || null);
+    const [initialInputs,] = useState(JSON.parse(router.query.inputs || null));
     const { getPagePath, constructLink } = useContextualRouting();
-    const [provider, setProvider] = useState(initialState?.provider || null);
+    const [provider, setProvider] = useState(router.query?.provider || null);
     const form = useForm();
     const formState = form.formState;
     const [fetcher, setFetcher] = useState({ state: 'idle' });
@@ -43,7 +42,7 @@ const SignInDialog = (props) => {
 
                 if (reason == 'requiresVerification') {
 
-                    const link = constructLink({ pathname: 'account/verify', query: { returnUrl: router.asPath } }, {
+                    const link = constructLink({ pathname: '/account/verify', query: { returnUrl: router.asPath } }, {
                         state: JSON.stringify({ inputs, provider })
                     });
 
@@ -69,12 +68,20 @@ const SignInDialog = (props) => {
         }
     };
 
-    const onload = () => {
+    const onLoad = () => {
 
-        if (initialState) {
+        if (initialInputs) {
             form.reset({
-                username: initialState.inputs.username,
-                password: initialState.inputs.password
+                username: initialInputs.username,
+                password: initialInputs.password
+            });
+
+            onSubmit(form.watch());
+        }
+        else {
+            form.reset({
+                username: '',
+                password: ''
             });
         }
     };
@@ -83,7 +90,7 @@ const SignInDialog = (props) => {
         router.push(getPagePath());
     };
 
-    useEffect(() => { onload(); }, []);
+    useEffect(() => { onLoad(); }, []);
 
     return (
         <Dialog {...props} onClose={onClose}>
@@ -105,7 +112,7 @@ const SignInDialog = (props) => {
                                 <Controller
                                     name="username"
                                     control={form.control}
-                                    render={({ field }) => <PhoneInput {...field}
+                                    render={({ field }) => <PhoneField {...field}
                                         label="Email or Phone number"
                                         variant="standard"
                                         error={!!formState.errors.username}
@@ -129,7 +136,7 @@ const SignInDialog = (props) => {
                         </Grid>
                         <Box mb={3}>
                             <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
-                                Sign Up
+                                Sign In
                             </LoadingButton>
                         </Box>
                     </Box> :
@@ -140,7 +147,7 @@ const SignInDialog = (props) => {
                         </Stack>
                     </>
                 }
-                <Typography variant="body2" textAlign="center" pb={4}>Don't have an account? <Link {...constructLink({ pathname: 'account/signup', query: { returnUrl } })} passHref><MuiLink underline="hover">Sign up</MuiLink></Link></Typography>
+                <Typography variant="body2" textAlign="center" pb={4}>Don't have an account? <Link {...constructLink({ pathname: '/account/signup', query: { returnUrl } })} passHref><MuiLink underline="hover">Sign up</MuiLink></Link></Typography>
             </DialogContent>
         </Dialog>
     );

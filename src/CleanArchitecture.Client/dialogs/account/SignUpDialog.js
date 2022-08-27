@@ -1,23 +1,21 @@
 import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, TextField, Link as MuiLink, Dialog } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { DialogCloseButton } from '../../components';
+import { DialogCloseButton, PasswordField, PhoneField, useClient } from '../../components';
 import * as Icons from '@mui/icons-material';
-import PhoneInput from '../../components/PhoneInput';
-import PasswordField from '../../components/PasswordField';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import client from '../../client';
-import { preventDefault, formatError, isHttpError, addQueryString } from '../../utils';
+import { preventDefault, formatError, isHttpError, addQueryParams } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { useContextualRouting } from '..';
 
 const SignUpDialog = (props) => {
     const router = useRouter();
+    const client = useClient();
     const returnUrl = router.query.returnUrl || '/';
     const { getPagePath, constructLink } = useContextualRouting();
-    const [provider, setProvider] = useState(null);
+    const [provider, setProvider] = useState(router.query?.provider || null);
     const form = useForm();
     const formState = form.formState;
     const [fetcher, setFetcher] = useState({ state: 'idle' });
@@ -28,18 +26,18 @@ const SignUpDialog = (props) => {
         try {
             setFetcher(fetcher => ({ ...fetcher, state: 'submitting' }));
 
-            await client.post('account/register', inputs);
+            await client.post('/account/register', inputs);
             form.clearErrors();
 
-            const link = constructLink({ pathname: 'account/verify', query: { returnUrl: addQueryString('account/signin', { returnUrl }) } }, {
-                state: JSON.stringify({ inputs, provider })
+            const link = constructLink({ pathname: '/account/verify', query: { returnUrl: addQueryParams('/account/signin', { returnUrl, provider }) } }, {
+                inputs: JSON.stringify(inputs)
             });
 
             router.push(link.href, link.as);
         }
         catch (error) {
             console.error(error);
-            
+
             if (isHttpError(error)) {
 
                 form.clearErrors();
@@ -56,7 +54,7 @@ const SignUpDialog = (props) => {
         }
     };
 
-    const onload = () => {
+    const onLoad = () => {
         form.reset({
             firstName: '',
             lastName: '',
@@ -69,7 +67,7 @@ const SignUpDialog = (props) => {
         router.push(getPagePath());
     };
 
-    useEffect(() => { onload(); }, []);
+    useEffect(() => { onLoad(); }, []);
 
     return (
         <Dialog {...props} onClose={onClose}>
@@ -116,7 +114,7 @@ const SignUpDialog = (props) => {
                                 <Controller
                                     name="username"
                                     control={form.control}
-                                    render={({ field }) => <PhoneInput {...field}
+                                    render={({ field }) => <PhoneField {...field}
                                         label="Email or Phone number"
                                         variant="standard"
                                         error={!!formState.errors.username}
@@ -151,7 +149,7 @@ const SignUpDialog = (props) => {
                         </Stack>
                     </>
                 }
-                <Typography variant="body2" textAlign="center" pb={4}>Already have an account? <Link  {...constructLink({ pathname: 'account/signin', query: { returnUrl } })} passHref><MuiLink underline="hover">Sign in</MuiLink></Link></Typography>
+                <Typography variant="body2" textAlign="center" pb={4}>Already have an account? <Link  {...constructLink({ pathname: '/account/signin', query: { returnUrl } })} passHref><MuiLink underline="hover">Sign in</MuiLink></Link></Typography>
             </DialogContent>
         </Dialog>
     );

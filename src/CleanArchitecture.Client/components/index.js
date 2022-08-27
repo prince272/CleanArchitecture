@@ -24,4 +24,12 @@ DialogCloseButton.propTypes = {
     onClose: PropTypes.func.isRequired,
 };
 
+export { default as PasswordField } from './PasswordField';
+export { default as PhoneField } from './PhoneField';
+
+export { default as DialogContext } from './DialogContext';
+export * from './DialogContext';
 export { DialogCloseButton };
+
+export { default as ClientContext } from './ClientContext';
+export * from './ClientContext';

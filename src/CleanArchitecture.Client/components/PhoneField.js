@@ -6,7 +6,7 @@ import { TextField } from '@mui/material';
 import { isPhoneFormat } from '../utils';
 import { CountrySelectWithIcon as CountrySelect }  from './CountrySelect';
 
-const PhoneTextField = forwardRef(({ value, value2, onChange, onChange2, onKeyDown, ...props }, inputRef) => {
+const CustomTextField = forwardRef(({ value, value2, onChange, onChange2, onKeyDown, ...props }, inputRef) => {
   return (
     <>
       <TextField {...props} value={isPhoneFormat(value2) ? value : value2} onChange={(e) => {
@@ -22,14 +22,15 @@ const PhoneTextField = forwardRef(({ value, value2, onChange, onChange2, onKeyDo
   );
 });
 
-const PhoneInput = forwardRef(({ value, onChange, ...props }, ref) => {
+CustomTextField.displayName = 'CustomTextField';
+
+const PhoneField = forwardRef(({ value, onChange, ...props }, ref) => {
 
   const value2 = value;
 
   return (
     <div>
       <ReactPhoneInput
-      
         flags={flags}
         addInternationalOption={false}
         international={false}
@@ -44,7 +45,7 @@ const PhoneInput = forwardRef(({ value, onChange, ...props }, ref) => {
           onChange,
           onChange2: onChange
         }}
-        inputComponent={PhoneTextField}
+        inputComponent={CustomTextField}
         ref={ref}
       />
       <style jsx>
@@ -59,13 +60,15 @@ const PhoneInput = forwardRef(({ value, onChange, ...props }, ref) => {
             top: 0;
             right: 0;
             display: ${isPhoneFormat(value2, 'style') ? 'flex' : 'none'} !important;
+            justify-content: end;
             order: 1;
             margin-top: 21px;
-            margin-left: -50px;
-            margin-right: 16px;
+            
           }
-          div > :global(.PhoneInput .PhoneInputCountry .PhoneInputCountrySelect) {
-            opacity: 0;
+          div > :global(.PhoneInput .PhoneInputCountry > div:first-child) {
+            position: absolute;
+            width: 36px;
+            height: 38px;
           }
           div > :global(.PhoneInput input) {
             padding-right: ${isPhoneFormat(value2, 'style') ? '60px' : '0px'};
@@ -76,4 +79,6 @@ const PhoneInput = forwardRef(({ value, onChange, ...props }, ref) => {
   )
 });
 
-export default PhoneInput;
+PhoneField.displayName = 'PhoneField';
+
+export default PhoneField;

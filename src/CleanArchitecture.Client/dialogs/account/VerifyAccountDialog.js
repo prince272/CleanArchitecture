@@ -1,13 +1,11 @@
 import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, Link as MuiLink, Dialog, TextField } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { DialogCloseButton } from '../../components';
+import { DialogCloseButton, PhoneField, useClient } from '../../components';
 import * as Icons from '@mui/icons-material';
-import PhoneInput from '../../components/PhoneInput';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useTimer } from 'use-timer';
 import { Controller, useForm } from 'react-hook-form';
-import client from '../../client';
 import { preventDefault, formatError, isPhoneFormat, isHttpError } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
@@ -16,15 +14,16 @@ import * as casing from 'change-case';
 
 const VerifyAccountDialog = (props) => {
     const router = useRouter();
+    const client = useClient();
 
     const [sent, setSent] = useState(false);
     const sendingTimer = useTimer({ initialTime: 60, endTime: 0, timerType: 'DECREMENTAL' });
-
-    const returnUrl = router.query.returnUrl;
-    if (!returnUrl) throw new Error('\'returnUrl\' query value was not supplied');
-
-    const initialState = JSON.parse(router.query.state || null);
-    if (!initialState) throw new Error('\'state\' query value was not supplied');
+    
+    const returnUrl = router.query.returnUrl || '/';
+    const [initialInputs,] = useState(JSON.parse(router.query.inputs || null));
+    if (!initialInputs) throw new Error('\'state\' query value was not supplied');
+    const accountType = isPhoneFormat(initialInputs.username) ? 'PhoneNumber' : 'EmailAddress';
+    const messageType = isPhoneFormat(initialInputs.username) ? 'SMS' : 'Email';
 
     const { getPagePath, constructLink } = useContextualRouting();
     const form = useForm();
@@ -32,16 +31,13 @@ const VerifyAccountDialog = (props) => {
     const [fetcher, setFetcher] = useState({ state: 'idle', data: null });
     const { enqueueSnackbar } = useSnackbar();
 
-    const accountType = isPhoneFormat(initialState.inputs.username) ? 'PhoneNumber' : 'EmailAddress';
-    const messageType = isPhoneFormat(initialState.inputs.username) ? 'SMS' : 'Email';
-
     const onSubmit = async (inputs, resend = false) => {
         try {
             if (!sent || resend) {
                 setFetcher(fetcher => ({ ...fetcher, state: 'sending' }));
                 sendingTimer.start();
 
-                let response = await client.post('account/verify/send', inputs);
+                let response = await client.post('/account/verify/send', inputs);
                 form.clearErrors();
 
                 setSent(true);
@@ -50,10 +46,10 @@ const VerifyAccountDialog = (props) => {
             else {
                 setFetcher(fetcher => ({ ...fetcher, state: 'verifying' }));
 
-                let response = await client.post('account/verify', inputs);
+                let response = await client.post('/account/verify', inputs);
                 form.clearErrors();
 
-                const link = constructLink(returnUrl, { state: JSON.stringify(initialState) });
+                const link = constructLink(returnUrl, { inputs: JSON.stringify(initialInputs) });
                 router.push(link.href, link.as);
             }
         }
@@ -76,9 +72,9 @@ const VerifyAccountDialog = (props) => {
         }
     };
 
-    const onload = () => {
+    const onLoad = () => {
         form.reset({
-            username: initialState.inputs.username
+            username: initialInputs.username
         });
     };
 
@@ -86,7 +82,7 @@ const VerifyAccountDialog = (props) => {
         router.push(getPagePath());
     };
 
-    useEffect(() => { onload(); }, []);
+    useEffect(() => { onLoad(); }, []);
 
     return (
         <Dialog {...props} onClose={onClose}>
@@ -107,7 +103,7 @@ const VerifyAccountDialog = (props) => {
                             <Controller
                                 name="username"
                                 control={form.control}
-                                render={({ field }) => <PhoneInput {...field}
+                                render={({ field }) => <PhoneField {...field}
                                     label="Email or Phone number"
                                     variant="standard"
                                     error={!!formState.errors.username}

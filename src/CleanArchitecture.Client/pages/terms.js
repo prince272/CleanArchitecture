@@ -9,7 +9,7 @@ import { useRouter } from 'next/router';
 
 export default function Terms() {
 
-  const router = useRouter();  
+  const router = useRouter();
   const { constructLink } = useContextualRouting();
 
   return (
@@ -21,14 +21,14 @@ export default function Terms() {
       </Head>
       <Link href="/"><a>Home</a></Link>
       <br />
-      <Link {...constructLink({ pathname: "account/signin", query: { returnUrl: router.asPath } })}><a>Sign In</a></Link>
+      <Link {...constructLink({ pathname: '/account/signin', query: { returnUrl: router.asPath } })}><a>Sign In</a></Link>
       <br />
-      <Link {...constructLink({ pathname: "account/signup", query: { returnUrl: router.asPath } })}><a>Sign Up</a></Link>
+      <Link {...constructLink({ pathname: '/account/signup', query: { returnUrl: router.asPath } })}><a>Sign Up</a></Link>
       <br />
-      <Link {...constructLink("account/password/change")}><a>Change Password</a></Link>
+      <Link {...constructLink('/account/password/change')}><a>Change Password</a></Link>
       <br />
       <br />
-      <Link {...constructLink("account/password/reset")}><a>Reset Password</a></Link>
+      <Link {...constructLink('/account/password/reset')}><a>Reset Password</a></Link>
       <br />
       <br />
 

@@ -210,7 +210,7 @@ export const formatError = (error) => {
 
 export function isHttpError(payload) {
     return payload !== null && typeof payload === 'object' && (payload.isAxiosError === true);
-}
+};
 
 // useCombinedRefs - CodeSandbox
 // source: https://codesandbox.io/s/uhj08?file=/src/App.js:223-537
@@ -257,7 +257,7 @@ export function compressString(string) {
         }
     }
     return btoa(unescape(encodeURIComponent(newString)));
-}
+};
 
 export function decompressString(string) {
 
@@ -279,9 +279,9 @@ export function decompressString(string) {
         }
     }
     return newString;
-}
+};
 
-export const addQueryString = (uri, params) => {
+export const addQueryParams = (uri, params) => {
     let anchorIndex = uri.indexOf('#');
     let uriToBeAppended = uri;
     let anchorText = '';
@@ -311,4 +311,20 @@ export const addQueryString = (uri, params) => {
     sb.push(anchorText);
     const result = sb.join('');
     return result;
-}
+};
+
+// Remove an empty query string from url
+// source: https://stackoverflow.com/questions/36331073/remove-an-empty-query-string-from-url/36331581#36331581
+export const removeEmptyQueryParams = (uri) => {
+    return uri.replace(/([\?&])([^=]+=($|&))+/g, '$1').replace(/[\?&]$/g, '');
+};
+
+// Remove blank attributes from an Object in Javascript
+// source: https://stackoverflow.com/questions/286141/remove-blank-attributes-from-an-object-in-javascript#answer-38340730
+export const cleanObject = (obj) => {
+    return Object.fromEntries(
+        Object.entries(obj)
+            .filter(([_, v]) => v != null)
+            .map(([k, v]) => [k, v === Object(v) ? cleanObject(v) : v])
+    );
+};
