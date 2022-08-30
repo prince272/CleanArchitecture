@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import { Backdrop, Fade, useMediaQuery } from '@mui/material';
 import { useTheme } from '@emotion/react';
 
-// MUI - How to open Dialog imperatively/programmatically
+// MUI - How to open View imperatively/programmatically
 // source: https://stackoverflow.com/questions/63737526/mui-how-to-open-dialog-imperatively-programmatically
 const ViewContext = createContext();
 
@@ -22,64 +22,64 @@ const ViewContainer = ({ Component, actions, props: { open, disableTransition, .
 
 const ViewProvider = ({ children }) => {
 
-    const [dialogs, setDialogs] = useState([]);
+    const [views, setViews] = useState([]);
 
-    const openDialog = (newDialog) => {
-        setDialogs((dialogs) => [...dialogs, { ...newDialog, props: { ...newDialog.props, open: true } }]);
+    const openView = (newView) => {
+        setViews((views) => [...views, { ...newView, props: { ...newView.props, open: true } }]);
     };
 
-    const closeDialog = () => {
-        setDialogs((dialogs) => {
-            const currentDialog = dialogs.pop();
-            if (!currentDialog) return dialogs;
+    const closeView = () => {
+        setViews((views) => {
+            const currentView = views.pop();
+            if (!currentView) return views;
 
-            const updatedDialogs = [...dialogs].concat({
-                ...currentDialog,
+            const updatedViews = [...views].concat({
+                ...currentView,
                 props: {
-                    ...currentDialog.props,
+                    ...currentView.props,
                     disableTransition: false,
                     open: false
                 }
             });
-            return updatedDialogs;
+            return updatedViews;
         });
     };
 
-    const replaceDialog = (newDialog) => {
-        setDialogs((dialogs) => {
-            const currentDialog = dialogs.pop();
-            if (!currentDialog) {
-                return [...dialogs, { ...newDialog, props: { ...newDialog.props, open: true } }];
+    const replaceView = (newView) => {
+        setViews((views) => {
+            const currentView = views.pop();
+            if (!currentView) {
+                return [...views, { ...newView, props: { ...newView.props, open: true } }];
             }
             else {
 
-                const updatedDialog = {
-                    ...currentDialog,
-                    ...newDialog,
+                const updatedView = {
+                    ...currentView,
+                    ...newView,
                     props: {
-                        ...newDialog.props,
+                        ...newView.props,
                         disableTransition: true,
                         open: true
                     }
                 };
 
-                return [...dialogs].concat(updatedDialog);
+                return [...views].concat(updatedView);
             }
         });
     };
 
-    const disposeDialog = () => {
-        setDialogs((dialogs) => dialogs.slice(0, dialogs.length - 1));
+    const disposeView = () => {
+        setViews((views) => views.slice(0, views.length - 1));
     };
 
-    const actions = { open: openDialog, replace: replaceDialog, close: closeDialog, dispose: disposeDialog };
+    const actions = { open: openView, replace: replaceView, close: closeView, dispose: disposeView };
 
     return (
         <ViewContext.Provider value={actions}>
             {children}
 
-            {dialogs.map((dialog, i) => {
-                return (<ViewContainer key={i} {...{ ...dialog, actions }} />);
+            {views.map((view, i) => {
+                return (<ViewContainer key={i} {...{ ...view, actions }} />);
             })}
 
         </ViewContext.Provider>
