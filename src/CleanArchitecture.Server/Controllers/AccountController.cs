@@ -446,7 +446,7 @@ namespace CleanArchitecture.Server.Controllers
 
             var signinInfo = await _signInManager.GetExternalLoginInfoAsync();
             if (signinInfo == null)
-                return ValidationProblem(title: "No external sign-in information provided.");
+                return ValidationProblem(title: "No external sign in information.");
 
             var signInResult = await _signInManager.ExternalLoginSignInAsync(signinInfo.LoginProvider, signinInfo.ProviderKey, isPersistent: false, bypassTwoFactor: true);
 

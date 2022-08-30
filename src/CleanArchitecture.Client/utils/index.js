@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+import { AxiosError } from 'axios';
 
 export const isPhoneFormat = (value) => {
     function isNullOrWhitespace(input) {
@@ -327,4 +327,8 @@ export const cleanObject = (obj) => {
             .filter(([_, v]) => v != null)
             .map(([k, v]) => [k, v === Object(v) ? cleanObject(v) : v])
     );
+};
+
+export const generateId = (length = 16) => {
+    return parseInt(Math.ceil(Math.random() * Date.now()).toPrecision(length).toString().replace(".", ""))
 };

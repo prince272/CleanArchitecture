@@ -5,10 +5,11 @@ import * as Icons from '@mui/icons-material';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { preventDefault, formatError, isHttpError, addQueryParams } from '../../utils';
+import { preventDefault, formatError, isHttpError, addQueryParams, getPath } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
-import { useContextualRouting } from '..';
+import { useContextualRouting } from '../routes.views';
+import { CLIENT_URL } from '../../client';
 
 const SignUpDialog = (props) => {
     const router = useRouter();
@@ -21,19 +22,30 @@ const SignUpDialog = (props) => {
     const [fetcher, setFetcher] = useState({ state: 'idle' });
     const { enqueueSnackbar } = useSnackbar();
 
-    const onSubmit = async (inputs) => {
+    const onSubmit = async (inputs, provider) => {
+        setProvider(provider);
 
         try {
             setFetcher(fetcher => ({ ...fetcher, state: 'submitting' }));
 
-            await client.post('/account/register', inputs);
-            form.clearErrors();
+            if (provider == 'credential') {
 
-            const link = constructLink({ pathname: '/account/verify', query: { returnUrl: addQueryParams('/account/signin', { returnUrl, provider }) } }, {
-                inputs: JSON.stringify(inputs)
-            });
-
-            router.push(link.href, link.as);
+                await client.post('/account/register', inputs);
+                form.clearErrors();
+    
+                const link = constructLink({ pathname: '/account/verify', query: { returnUrl: addQueryParams('/account/signin', { returnUrl, provider }) } }, {
+                    inputs: JSON.stringify(inputs)
+                });
+    
+                router.push(link.href, link.as);
+            }
+            else {
+                await client.signin({ ...inputs, provider, returnUrl: new URL(getPath(returnUrl), CLIENT_URL).toString() });
+                form.clearErrors();
+    
+                const link = constructLink(returnUrl);
+                router.push(link);
+            }
         }
         catch (error) {
             console.error(error);
@@ -82,8 +94,8 @@ const SignUpDialog = (props) => {
             </DialogTitle>
 
             <DialogContent sx={{ px: 4, pb: 0 }}>
-                {provider == 'username' ?
-                    <Box component={"form"} onSubmit={preventDefault(() => onSubmit(form.watch()))}>
+                {provider == 'credential' ?
+                    <Box component={"form"} onSubmit={preventDefault(() => onSubmit(form.watch(), 'credential'))}>
                         <Grid container pt={1} pb={4} spacing={3}>
                             <Grid item xs={12} sm={6}>
                                 <Controller
@@ -137,15 +149,28 @@ const SignUpDialog = (props) => {
                             </Grid>
                         </Grid>
                         <Box mb={3}>
-                            <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
+                            <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting' && provider == 'credential'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
                                 Sign Up
                             </LoadingButton>
                         </Box>
                     </Box> :
                     <>
                         <Stack pt={1} pb={3} spacing={2}>
-                            <Button variant="contained" size="large" startIcon={<Icons.AccountCircle />} onClick={() => setProvider("username")}>Use Email or Phone</Button>
-                            <Button variant="outlined" size="large" startIcon={<Icons.Google />}>Continue with Google</Button>
+                            <Button onClick={() => {
+                                // Show the form without submitting it. 
+                                setProvider('credential');
+                            }} disabled={fetcher.state == 'submitting'} variant="outlined" size="large" startIcon={<Icons.AccountCircle />}>Use Email or Phone</Button>
+
+                            <LoadingButton onClick={() => {
+                                onSubmit(form.watch(), 'google');
+                            }}
+                                startIcon={<Icons.Google />}
+                                loading={fetcher.state == 'submitting' && provider == 'google'}
+                                loadingPosition="start"
+                                type="submit"
+                                fullWidth
+                                variant="contained"
+                                size="large">Continue with Google</LoadingButton>
                         </Stack>
                     </>
                 }

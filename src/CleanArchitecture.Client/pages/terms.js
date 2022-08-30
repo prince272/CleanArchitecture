@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import Image from 'next/image';
 import { forwardRef, useEffect, useState } from 'react';
-import { useContextualRouting } from '../dialogs';
+import { useContextualRouting } from '../dialogs/routes.views';
 import styles from '../assets/styles/Home.module.css';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogContentText, DialogTitle, Fade, FormControl, MenuItem, Select } from '@mui/material';

@@ -9,7 +9,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { preventDefault, formatError, isPhoneFormat, isHttpError } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
-import { useContextualRouting } from '..';
+import { useContextualRouting } from '../routes.views';
 import * as casing from 'change-case';
 
 const VerifyAccountDialog = (props) => {

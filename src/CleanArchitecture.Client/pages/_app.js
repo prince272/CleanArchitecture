@@ -2,7 +2,7 @@ import '../assets/styles/globals.css';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
-import { findContextualRoute } from '../dialogs';
+import { findContextualRoute } from '../dialogs/routes.views';
 import App from 'next/app';
 import { useRouter } from 'next/router';
 import { useEffect, useRef } from 'react';
@@ -41,6 +41,7 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
       }
     };
 
+    handleRouteChangeComplete(router.asPath, {});
     router.events.on('routeChangeStart', handleRouteChangeStart);
     router.events.on('routeChangeComplete', handleRouteChangeComplete);
     router.events.on('routeChangeError', handleRouteChangeError);
@@ -49,7 +50,8 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
       router.events.off('routeChangeStart', handleRouteChangeStart);
       router.events.off('routeChangeComplete', handleRouteChangeComplete);
       router.events.off('routeChangeError', handleRouteChangeError);
-    }
+    };
+    
   }, []);
 
   return (<Component {...appProps} {...pageProps} />);

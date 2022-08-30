@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import Image from 'next/image';
-import { useContextualRouting } from '../dialogs';
+import { useContextualRouting } from '../dialogs/routes.views';
 import styles from '../assets/styles/Home.module.css';
 import Link from 'next/link';
 import { useClient } from '../components';
@@ -34,7 +34,9 @@ export default function Home(props) {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
+          Welcome to <a onClick={async () => {
+            client.get('/account/profile')
+          }}>Next.js!</a>
         </h1>
         <p className={styles.description}>
           Get started by editing{' '}

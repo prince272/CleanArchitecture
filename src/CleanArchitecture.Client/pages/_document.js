@@ -37,6 +37,33 @@ class MyDocument extends Document {
                     {/* We recommend keeping all our environment variables on the server and
                         exposing them to the browser through window.env */}
                     <script dangerouslySetInnerHTML={{ __html: `window.env = ${JSON.stringify(this.props.env)}` }} />
+                    <script dangerouslySetInnerHTML={{
+                        __html: `
+                      const url = window.location;
+
+                      if (window.opener) {
+              
+                          if (url) {
+                              const browserId = new URLSearchParams(url.search).get('browserId');
+              
+                              if (browserId) {
+                                  const name = "browserCallback_" + browserId;
+                                  const callback = window.opener[name];
+              
+                                  if (callback) {
+                                      console.debug("BrowserWindow.notifyOpener: passing url message to opener");
+                                      callback(url, false);
+                                  }
+                                  else {
+                                      console.warn("BrowserWindow.notifyOpener: no matching callback found on opener");
+                                  }
+                              }
+                              else {
+                                  console.warn("BrowserWindow.notifyOpener: no state found in response url");
+                              }
+                          }
+                      }
+                    ` }}></script>
                     <NextScript />
                 </body>
             </Html>

@@ -86,8 +86,8 @@ builder.Services.AddIdentity<User, Role>(options =>
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
 })
     .AddJwtBearer(options =>
     {
@@ -197,6 +197,8 @@ builder.Services.AddClientServer(options => {
     options.ClientUrls = builder.Configuration.GetSection("ClientUrls").Get<string[]>(); 
 });
 
+builder.Services.AddResponseCompression();
+
 builder.Services.AddControllers(options =>
 {
     // Form field is required even if not defined so
@@ -211,6 +213,40 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    // Cookie settings
+    options.Cookie.Domain = null;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+    ? CookieSecurePolicy.SameAsRequest
+    : CookieSecurePolicy.Always;
+
+    options.SlidingExpiration = true;
+
+    options.LoginPath = "/authentication/redirect";
+    options.LogoutPath = "/accounts/signout";
+    options.ReturnUrlParameter = "returnUrl";
+
+
+    // Not creating a new object since ASP.NET Identity has created
+    // one already and hooked to the OnValidatePrincipal event.
+    // See https://github.com/aspnet/AspNetCore/blob/5a64688d8e192cacffda9440e8725c1ed41a30cf/src/Identity/src/Identity/IdentityServiceCollectionExtensions.cs#L56
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
 
 builder.Services.AddFluentValidation(options =>
 {
@@ -270,6 +306,7 @@ app.UseAnonymous();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseResponseCompression();
 app.MapControllers();
 
 app.Run();
