@@ -4,9 +4,9 @@ import { useTheme } from '@emotion/react';
 
 // MUI - How to open Dialog imperatively/programmatically
 // source: https://stackoverflow.com/questions/63737526/mui-how-to-open-dialog-imperatively-programmatically
-const DialogContext = createContext();
+const ViewContext = createContext();
 
-const DialogContainer = ({ Component, actions, props: { open, disableTransition, ...props } }) => {
+const ViewContainer = ({ Component, actions, props: { open, disableTransition, ...props } }) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -20,7 +20,7 @@ const DialogContainer = ({ Component, actions, props: { open, disableTransition,
     );
 };
 
-const DialogProvider = ({ children }) => {
+const ViewProvider = ({ children }) => {
 
     const [dialogs, setDialogs] = useState([]);
 
@@ -75,37 +75,37 @@ const DialogProvider = ({ children }) => {
     const actions = { open: openDialog, replace: replaceDialog, close: closeDialog, dispose: disposeDialog };
 
     return (
-        <DialogContext.Provider value={actions}>
+        <ViewContext.Provider value={actions}>
             {children}
 
             {dialogs.map((dialog, i) => {
-                return (<DialogContainer key={i} {...{ ...dialog, actions }} />);
+                return (<ViewContainer key={i} {...{ ...dialog, actions }} />);
             })}
 
-        </DialogContext.Provider>
+        </ViewContext.Provider>
     )
 };
 
-const DialogConsumer = ({ children }) => {
+const ViewConsumer = ({ children }) => {
     return (
-        <DialogContext.Consumer>
+        <ViewContext.Consumer>
             {context => {
                 if (context === undefined) {
-                    throw new Error('DialogConsumer must be used within a DialogProvider')
+                    throw new Error('ViewConsumer must be used within a ViewProvider')
                 }
                 return children(context)
             }}
-        </DialogContext.Consumer>
+        </ViewContext.Consumer>
     )
 };
 
-const useDialog = () => {
-    const context = useContext(DialogContext)
+const useView = () => {
+    const context = useContext(ViewContext)
     if (context === undefined) {
-        throw new Error('useDialog must be used within a DialogProvider')
+        throw new Error('useView must be used within a ViewProvider')
     }
     return context
 };
 
-export default DialogContext;
-export { DialogProvider, DialogConsumer, useDialog };
+export default ViewContext;
+export { ViewProvider, ViewConsumer, useView };

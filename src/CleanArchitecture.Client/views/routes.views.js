@@ -12,13 +12,13 @@ import { useRouter } from 'next/router';
 import QueryString from 'qs';
 
 const views = [];
-views.push({ key: 'changeAccount', Component: ChangeAccountDialog });
-views.push({ key: 'changePassword', Component: ChangePasswordDialog });
-views.push({ key: 'verifyAccount', Component: VerifyAccountDialog });
-views.push({ key: 'resetPassword', Component: ResetPasswordDialog });
-views.push({ key: 'signIn', Component: SignInDialog });
-views.push({ key: 'signOut', Component: SignOutDialog });
-views.push({ key: 'signUp', Component: SignUpDialog });
+views.push({ key: 'ChangeAccountDialog', Component: ChangeAccountDialog });
+views.push({ key: 'ChangePasswordDialog', Component: ChangePasswordDialog });
+views.push({ key: 'VerifyAccountDialog', Component: VerifyAccountDialog });
+views.push({ key: 'ResetPasswordDialog', Component: ResetPasswordDialog });
+views.push({ key: 'SignInDialog', Component: SignInDialog });
+views.push({ key: 'SignOutDialog', Component: SignOutDialog });
+views.push({ key: 'SignUpDialog', Component: SignUpDialog });
 
 const findContextualRoute = (url) => {
     const contextualRoute = findContextualRouteOnly(url);

@@ -2,11 +2,11 @@ import '../assets/styles/globals.css';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
-import { findContextualRoute } from '../dialogs/routes.views';
+import { findContextualRoute } from '../views/routes.views';
 import App from 'next/app';
 import { useRouter } from 'next/router';
 import { useEffect, useRef } from 'react';
-import { ClientProvider, DialogProvider, useDialog } from '../components';
+import { ClientProvider, ViewProvider, useView } from '../components';
 import { createClient } from '../client';
 
 const theme = createTheme({
@@ -17,7 +17,7 @@ const theme = createTheme({
 
 const PageRoute = ({ Component, pageProps, ...appProps }) => {
   const router = useRouter();
-  const dialog = useDialog();
+  const view = useView();
 
   useEffect(() => {
 
@@ -28,10 +28,10 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
       const contextualRoute = findContextualRoute(url);
       if (contextualRoute) {
         const Component = contextualRoute.Component;
-        dialog.replace({ Component });
+        view.replace({ Component });
       }
       else {
-        dialog.close();
+        view.close();
       }
     };
 
@@ -65,9 +65,9 @@ const MyApp = ({ server, ...props }) => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider maxSnack={3} preventDuplicate anchorOrigin={{ vertical: 'top', horizontal: 'center' }} >
-          <DialogProvider>
+          <ViewProvider>
             <PageRoute {...props} />
-          </DialogProvider>
+          </ViewProvider>
         </SnackbarProvider>
       </ThemeProvider>
     </ClientProvider>

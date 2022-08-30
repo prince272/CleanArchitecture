@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import Image from 'next/image';
-import { useContextualRouting } from '../dialogs/routes.views';
+import { useContextualRouting } from '../views/routes.views';
 import styles from '../assets/styles/Home.module.css';
 import Link from 'next/link';
 import { useClient } from '../components';

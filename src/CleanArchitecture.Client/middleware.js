@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findContextualRoute } from './dialogs/routes';
+import { findContextualRoute } from './views/routes';
 
 export function middleware(request) {
 
