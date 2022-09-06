@@ -4,11 +4,15 @@ import { useContextualRouting } from '../views/routes.views';
 import styles from '../assets/styles/Home.module.css';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useState } from 'react';
+import { useClient } from '../components';
 
 export default function Terms() {
 
   const router = useRouter();
+  const client = useClient();
   const { constructLink } = useContextualRouting();
+  const [count, setCount] = useState(0);
 
   return (
     <div className={styles.container}>
@@ -19,9 +23,9 @@ export default function Terms() {
       </Head>
       <Link href="/"><a>Home</a></Link>
       <br />
-      <Link {...constructLink({ pathname: '/account/signin', query: { returnUrl: router.asPath } })}><a>Sign In</a></Link>
+      <Link {...constructLink({ pathname: '/account/signin' })}><a>Sign In</a></Link>
       <br />
-      <Link {...constructLink({ pathname: '/account/signup', query: { returnUrl: router.asPath } })}><a>Sign Up</a></Link>
+      <Link {...constructLink({ pathname: '/account/signup' })}><a>Sign Up</a></Link>
       <br />
       <Link {...constructLink('/account/password/change')}><a>Change Password</a></Link>
       <br />
@@ -31,15 +35,15 @@ export default function Terms() {
       <br />
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Terms.js!</a>
+        <h1 className={styles.title} style={{ marginTop: "-100px" }}>
+          Welcome to <a onClick={() => setCount(count + 1)}>Terms.js! {count}</a>
         </h1>
 
         <p className={styles.description}>
           Get started by editing{' '}
           <code className={styles.code}>pages/index.js</code>
         </p>
-
+        <div>{JSON.stringify(client.user)}</div>
         <div className={styles.grid}>
           <a href="https://nextjs.org/docs" className={styles.card}>
             <h2>Documentation &rarr;</h2>

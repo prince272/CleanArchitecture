@@ -6,10 +6,11 @@ import SignInDialog from './account/SignInDialog';
 import SignOutDialog from './account/SignOutDialog';
 import SignUpDialog from './account/SignUpDialog';
 
-import { findContextualRoute as findContextualRouteOnly } from './routes';
+import { findContextualRoute, PAGE_PATH_QUERY_PARAM } from './routes';
 import { useCallback } from 'react';
-import { useRouter } from 'next/router';
-import QueryString from 'qs';
+import Router, { useRouter } from 'next/router';
+import { resolveHref } from 'next/dist/shared/lib/router/router';
+import { addQueryParams } from '../utils';
 
 const views = [];
 views.push({ key: 'ChangeAccountDialog', Component: ChangeAccountDialog });
@@ -20,8 +21,8 @@ views.push({ key: 'SignInDialog', Component: SignInDialog });
 views.push({ key: 'SignOutDialog', Component: SignOutDialog });
 views.push({ key: 'SignUpDialog', Component: SignUpDialog });
 
-const findContextualRoute = (url) => {
-    const contextualRoute = findContextualRouteOnly(url);
+const findContextualRouteWithComponent = (url) => {
+    const contextualRoute = findContextualRoute(url);
     if (contextualRoute) {
         const Component = views.find(view => view.key == contextualRoute.key)?.Component;
         if (Component) return { ...contextualRoute, Component };
@@ -30,40 +31,35 @@ const findContextualRoute = (url) => {
 };
 
 const useContextualRouting = () => {
-    const PAGE_HREF_QUERY_PARAM = '_UCR_PAGE_PATH';
-
     const router = useRouter();
-    const pageHrefQueryParam = router.query[PAGE_HREF_QUERY_PARAM];
-    const watchedQuery = Object.assign({}, router.query);
-    delete watchedQuery[PAGE_HREF_QUERY_PARAM];
 
-    const pageHref = pageHrefQueryParam ?? '/';
-    // @NOTE JSON.stringify might be replaced with any hashing solution
-    const queryHash = JSON.stringify(watchedQuery);
+    const getPagePath = function () {
+        return new URLSearchParams(router.asPath.split('?')[1]).get(PAGE_PATH_QUERY_PARAM) || '/';
+    };
+
     const constructLink = useCallback((urlString, hiddenParams) => {
         urlString = require('url').format(urlString);
-        const urlParams = Object.fromEntries(new URLSearchParams(urlString.split('?')[1]).entries());
-        const hiddenUrlString = `${router.pathname}?${QueryString.stringify({
-            ...urlParams,
-            ...hiddenParams,
-            [PAGE_HREF_QUERY_PARAM]: pageHref
-        })}`;
-
 
         if (findContextualRoute(urlString)) {
+
+            const [, pagePath] = resolveHref(Router, router.route, true);
+
+            urlString = addQueryParams(urlString, { [PAGE_PATH_QUERY_PARAM]: pagePath });
+            const hiddenUrlString = addQueryParams(urlString, { ...hiddenParams, [PAGE_PATH_QUERY_PARAM]: pagePath })
+
             return {
-                as: urlString,
-                href: hiddenUrlString
-            };
+                href: hiddenUrlString,
+                as: urlString
+            }
         }
         else {
             return { href: urlString };
         }
     },
-        [queryHash, pageHref]
+        [router.asPath, JSON.stringify(router.query)]
     );
 
-    return { getPagePath: () => pageHref, constructLink };
+    return { getPagePath, constructLink };
 };
 
-export { findContextualRoute, useContextualRouting };
+export { findContextualRouteWithComponent, useContextualRouting };

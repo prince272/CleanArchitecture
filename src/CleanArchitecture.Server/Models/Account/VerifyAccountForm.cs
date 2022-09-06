@@ -17,7 +17,7 @@ namespace CleanArchitecture.Server.Models.Account
 
         public string Username { get; set; } = null!;
 
-        public VerifyAccountReason Reason { get; set; }
+        public VerifyAccountStatus Status { get; set; }
 
         string IVerifyAccountForm.Code { get; set; } = null!;
     }
@@ -26,14 +26,14 @@ namespace CleanArchitecture.Server.Models.Account
     {
         public string Username { get; set; } = null!;
 
-        public VerifyAccountReason Reason { get; set; }
+        public VerifyAccountStatus Reason { get; set; }
 
         public string Code { get; set; } = null!;
     }
 
-    public enum VerifyAccountReason
+    public enum VerifyAccountStatus
     {
-        Verify,
+        New,
         Change
     }
 

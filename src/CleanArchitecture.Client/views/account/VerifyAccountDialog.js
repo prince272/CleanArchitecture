@@ -16,18 +16,20 @@ const VerifyAccountDialog = (props) => {
     const router = useRouter();
     const client = useClient();
 
+    const form = useForm();
+    const formState = form.formState;
+
     const [sent, setSent] = useState(false);
     const sendingTimer = useTimer({ initialTime: 60, endTime: 0, timerType: 'DECREMENTAL' });
-    
+
     const returnUrl = router.query.returnUrl || '/';
     const [initialInputs,] = useState(JSON.parse(router.query.inputs || null));
     if (!initialInputs) throw new Error('\'state\' query value was not supplied');
-    const accountType = isPhoneFormat(initialInputs.username) ? 'PhoneNumber' : 'EmailAddress';
-    const messageType = isPhoneFormat(initialInputs.username) ? 'SMS' : 'Email';
+    
+    const accountType = isPhoneFormat(form.watch('username')) ? 'PhoneNumber' : 'EmailAddress';
+    const messageType = isPhoneFormat(form.watch('username')) ? 'SMS' : 'Email';
 
     const { getPagePath, constructLink } = useContextualRouting();
-    const form = useForm();
-    const formState = form.formState;
     const [fetcher, setFetcher] = useState({ state: 'idle', data: null });
     const { enqueueSnackbar } = useSnackbar();
 
@@ -41,7 +43,7 @@ const VerifyAccountDialog = (props) => {
                 form.clearErrors();
 
                 setSent(true);
-                enqueueSnackbar(`${casing.pascalCase(messageType)} sent!`, { variant: 'success' });
+                enqueueSnackbar(`Security code sent!`, { variant: 'success' });
             }
             else {
                 setFetcher(fetcher => ({ ...fetcher, state: 'verifying' }));
@@ -49,7 +51,7 @@ const VerifyAccountDialog = (props) => {
                 let response = await client.post('/account/verify', inputs);
                 form.clearErrors();
 
-                const link = constructLink(returnUrl, { inputs: JSON.stringify(initialInputs) });
+                const link = constructLink(returnUrl, { inputs: router.query.inputs });
                 router.push(link.href, link.as);
             }
         }
@@ -89,7 +91,7 @@ const VerifyAccountDialog = (props) => {
             <DialogTitle component="div" sx={{ pt: 3, pb: 2, textAlign: "center" }}>
                 <Typography variant="h5" component="h1" gutterBottom>Verify the {casing.noCase(accountType)}</Typography>
                 <Typography variant="body2" gutterBottom>
-                    {!sent ? `We\'d send a security code to this ${casing.noCase(accountType)}`
+                    {!sent ? `We\'ll send a security code to this ${casing.noCase(accountType)}`
                         : `We\'ve sent a security code to this ${casing.noCase(accountType)}`}
                 </Typography>
                 <DialogCloseButton onClose={onClose} />
@@ -98,7 +100,7 @@ const VerifyAccountDialog = (props) => {
             <DialogContent sx={{ px: 4, pb: 0 }}>
 
                 <Box component={"form"} onSubmit={preventDefault(() => onSubmit(form.watch()))}>
-                    <Grid container pt={1} pb={4} spacing={4}>
+                    <Grid container pt={1} pb={4} spacing={3}>
                         <Grid item xs={12}>
                             <Controller
                                 name="username"
@@ -128,7 +130,8 @@ const VerifyAccountDialog = (props) => {
                                         error={!!formState.errors.code}
                                         helperText={formState.errors.code?.message}
                                         autoFocus
-                                        fullWidth focused />}
+                                        fullWidth
+                                        focused />}
                                 />
                             </Grid>
                         }

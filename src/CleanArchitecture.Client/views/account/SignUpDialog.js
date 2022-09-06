@@ -12,13 +12,17 @@ import { useContextualRouting } from '../routes.views';
 import { CLIENT_URL } from '../../client';
 
 const SignUpDialog = (props) => {
+
     const router = useRouter();
     const client = useClient();
+
+    const form = useForm();
+    const formState = form.formState;
+    
     const returnUrl = router.query.returnUrl || '/';
     const { getPagePath, constructLink } = useContextualRouting();
     const [provider, setProvider] = useState(router.query?.provider || null);
-    const form = useForm();
-    const formState = form.formState;
+
     const [fetcher, setFetcher] = useState({ state: 'idle' });
     const { enqueueSnackbar } = useSnackbar();
 
@@ -87,7 +91,7 @@ const SignUpDialog = (props) => {
                 <Typography variant="h5" component="h1" gutterBottom>Create an account</Typography>
                 <Typography variant="body2" gutterBottom>
                     {{
-                        username: 'Enter your personal information'
+                        credential: 'Enter your personal information'
                     }[provider] || 'Select the method you want to use'}
                 </Typography>
                 <DialogCloseButton onClose={onClose} />

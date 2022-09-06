@@ -24,6 +24,19 @@ namespace CleanArchitecture.Server.Models.Account
         string IResetPasswordForm.Code { get; set; } = null!;
     }
 
+    public class VerifyResetPasswordForm : IResetPasswordForm
+    {
+        public VerifyResetPasswordForm()
+        {
+        }
+
+        public string Username { get; set; } = null!;
+
+        string IResetPasswordForm.Password { get; set; } = null!;
+
+        public string Code { get; set; } = null!;
+    }
+
     public class ResetPasswordForm : IResetPasswordForm
     {
         public string Username { get; set; } = null!;
@@ -38,6 +51,15 @@ namespace CleanArchitecture.Server.Models.Account
         public SendResetPasswordValidator()
         {
             RuleFor(_ => _.Username).NotEmpty();
+        }
+    }
+
+    public class VerifyResetPasswordValidator : AbstractValidator<VerifyResetPasswordForm>
+    {
+        public VerifyResetPasswordValidator()
+        {
+            RuleFor(_ => _.Username).NotEmpty();
+            RuleFor(_ => _.Code).NotEmpty();
         }
     }
 

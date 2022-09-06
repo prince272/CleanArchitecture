@@ -2,7 +2,7 @@ import '../assets/styles/globals.css';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
-import { findContextualRoute } from '../views/routes.views';
+import { findContextualRouteWithComponent } from '../views/routes.views';
 import App from 'next/app';
 import { useRouter } from 'next/router';
 import { useEffect, useRef } from 'react';
@@ -25,7 +25,7 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
     };
 
     const handleRouteChangeComplete = (url, { shallow }) => {
-      const contextualRoute = findContextualRoute(url);
+      const contextualRoute = findContextualRouteWithComponent(url);
       if (contextualRoute) {
         const Component = contextualRoute.Component;
         view.replace({ Component });

@@ -89,7 +89,7 @@ namespace CleanArchitecture.Server.Controllers
             }
             user.FirstName = form.FirstName;
             user.LastName = form.LastName;
-            user.UserName = await SecurityHelper.GenerateSlugAsync($"{form.FirstName} {form.LastName}".ToLowerInvariant(),
+            user.UserName = await Algorithm.GenerateSlugAsync($"{form.FirstName} {form.LastName}".ToLowerInvariant(),
                 "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
             user.RegisteredOn = DateTimeOffset.UtcNow;
 
@@ -117,7 +117,7 @@ namespace CleanArchitecture.Server.Controllers
 
             User? user = null;
 
-            if (form.Reason == VerifyAccountReason.Change)
+            if (form.Status == VerifyAccountStatus.Change)
             {
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
@@ -133,7 +133,7 @@ namespace CleanArchitecture.Server.Controllers
 
                 user = currentUser;
             }
-            else if (form.Reason == VerifyAccountReason.Verify)
+            else if (form.Status == VerifyAccountStatus.New)
             {
                 user = await _userManager.FindByUsernameAsync(form.Username);
 
@@ -193,7 +193,7 @@ namespace CleanArchitecture.Server.Controllers
 
             User? user = null;
 
-            if (form.Reason == VerifyAccountReason.Change)
+            if (form.Reason == VerifyAccountStatus.Change)
             {
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
@@ -209,7 +209,7 @@ namespace CleanArchitecture.Server.Controllers
 
                 user = currentUser;
             }
-            else if (form.Reason == VerifyAccountReason.Verify)
+            else if (form.Reason == VerifyAccountStatus.New)
             {
                 user = await _userManager.FindByUsernameAsync(form.Username);
 
@@ -246,36 +246,6 @@ namespace CleanArchitecture.Server.Controllers
             return Ok();
         }
 
-        [Authorize]
-        [HttpPost("account/change")]
-        public async Task<IActionResult> ChangeAccount([FromBody] SendVerifyAccountForm form)
-        {
-            var formState = await HttpContext.RequestServices.GetRequiredService<SendVerifyAccountValidator>().ValidateAsync(form);
-            if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
-
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
-
-            var user = await _userManager.FindByUsernameAsync(form.Username);
-
-            if (user != null)
-            {
-                var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is already registered.");
-                return ValidationProblem(errors);
-            }
-
-            var formUsernameType = ContactHelper.Switch(form.Username);
-
-            return formUsernameType switch
-            {
-                ContactType.EmailAddress => Ok(),
-                ContactType.PhoneNumber => Ok(),
-                _ => throw new InvalidOperationException(),
-            };
-        }
-
-
         [HttpPost("account/password/reset/send")]
         public async Task<IActionResult> SendResetPassword([FromBody] SendResetPasswordForm form)
         {
@@ -303,7 +273,7 @@ namespace CleanArchitecture.Server.Controllers
                             From = _appSettings.Value.Mailing.Accounts["Support"],
                             To = form.Username,
                             Subject = $"Reset Your Password",
-                            Body = await _viewRenderer.RenderToStringAsync("Email/ResetPassword", (user, form))
+                            Body = await _viewRenderer.RenderToStringAsync("Email/ResetPassword", (user, (IResetPasswordForm)form))
                         };
 
                         await _emailSender.SendAsync(message.From, message.To, message.Subject, message.Body);
@@ -316,7 +286,7 @@ namespace CleanArchitecture.Server.Controllers
                         var message = new
                         {
                             PhoneNumber = form.Username,
-                            Body = HtmlHelper.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/ResetPassword", (user, form)))
+                            Body = HtmlHelper.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/ResetPassword", (user, (IResetPasswordForm)form)))
                         };
 
                         await _smsSender.SendAsync(message.PhoneNumber, message.Body);
@@ -324,6 +294,31 @@ namespace CleanArchitecture.Server.Controllers
                     break;
 
                 default: throw new InvalidOperationException();
+            }
+
+            return Ok();
+        }
+
+        [HttpPost("account/password/reset/verify")]
+        public async Task<IActionResult> VerifyResetPassword([FromBody] VerifyResetPasswordForm form)
+        {
+            var formState = await HttpContext.RequestServices.GetRequiredService<VerifyResetPasswordValidator>().ValidateAsync(form);
+            if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
+
+            var user = await _userManager.FindByUsernameAsync(form.Username);
+            if (user == null)
+            {
+                var errors = new Dictionary<string, string[]>();
+                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                return ValidationProblem(errors);
+            }
+
+            var invalidToken = !await _userManager.VerifyUserTokenAsync(user, _userManager.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", form.Code);
+            if (invalidToken)
+            {
+                var errors = new Dictionary<string, string[]>();
+                errors.Add(() => form.Code, $"'{nameof(form.Code).Humanize()}' is not valid.");
+                return ValidationProblem(errors);
             }
 
             return Ok();
@@ -446,7 +441,7 @@ namespace CleanArchitecture.Server.Controllers
 
             var signinInfo = await _signInManager.GetExternalLoginInfoAsync();
             if (signinInfo == null)
-                return ValidationProblem(title: "No external sign in information.");
+                return ValidationProblem(title: $"Failed to authenticate with {provider.Humanize(LetterCasing.Title)}.");
 
             var signInResult = await _signInManager.ExternalLoginSignInAsync(signinInfo.LoginProvider, signinInfo.ProviderKey, isPersistent: false, bypassTwoFactor: true);
 
@@ -471,14 +466,14 @@ namespace CleanArchitecture.Server.Controllers
                 else
                 {
                     var firstName = signinInfo.Principal.FindFirstValue(ClaimTypes.GivenName) ?? string.Empty;
-                    var lastName = signinInfo.Principal.FindFirstValue(ClaimTypes.Surname) ?? string.Empty; ;
+                    var lastName = signinInfo.Principal.FindFirstValue(ClaimTypes.Surname) ?? string.Empty;
 
                     user = new User();
                     user.Email = email;
                     user.EmailConfirmed = true;
                     user.FirstName = firstName;
                     user.LastName = lastName;
-                    user.UserName = await SecurityHelper.GenerateSlugAsync($"{firstName} {lastName}".ToLowerInvariant(),
+                    user.UserName = await Algorithm.GenerateSlugAsync($"{firstName} {lastName}".ToLowerInvariant(),
                                  "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
                     user.RegisteredOn = DateTimeOffset.UtcNow;
 

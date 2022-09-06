@@ -18,4 +18,6 @@ const findContextualRoute = (url) => {
     return contextualRoute;
 };
 
-export { findContextualRoute };
+const PAGE_PATH_QUERY_PARAM = 'pageUrl';
+
+export { findContextualRoute, routes, PAGE_PATH_QUERY_PARAM };

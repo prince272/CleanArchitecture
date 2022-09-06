@@ -15,12 +15,15 @@ import { CLIENT_URL } from '../../client';
 const SignInDialog = (props) => {
     const router = useRouter();
     const client = useClient();
-    const returnUrl = router.query.returnUrl || '/';
-    const [initialInputs,] = useState(JSON.parse(router.query.inputs || null));
-    const { getPagePath, constructLink } = useContextualRouting();
-    const [provider, setProvider] = useState(router.query?.provider || null);
+
     const form = useForm();
     const formState = form.formState;
+
+    const returnUrl = router.query.returnUrl || '/';
+
+    const { getPagePath, constructLink } = useContextualRouting();
+    const [provider, setProvider] = useState(router.query?.provider || null);
+
     const [fetcher, setFetcher] = useState({ state: 'idle' });
     const { enqueueSnackbar } = useSnackbar();
 
@@ -71,6 +74,7 @@ const SignInDialog = (props) => {
     };
 
     const onLoad = () => {
+        const initialInputs = JSON.parse(router.query.inputs || null);
 
         if (initialInputs) {
             form.reset({
@@ -78,7 +82,7 @@ const SignInDialog = (props) => {
                 password: initialInputs.password
             });
 
-            onSubmit(form.watch());
+            onSubmit(form.watch(), provider);
         }
         else {
             form.reset({
@@ -100,7 +104,7 @@ const SignInDialog = (props) => {
                 <Typography variant="h5" component="h1" gutterBottom>Sign in to account</Typography>
                 <Typography variant="body2" gutterBottom>
                     {{
-                        username: 'Enter your credentials'
+                        credential: 'Enter your credentials'
                     }[provider] || 'Select the method you want to use'}
                 </Typography>
                 <DialogCloseButton onClose={onClose} />
@@ -134,6 +138,9 @@ const SignInDialog = (props) => {
                                         helperText={formState.errors.password?.message}
                                         fullWidth />}
                                 />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Box mt={-1}><Typography variant="body2" textAlign="right"><Link {...constructLink({ pathname: '/account/password/reset', query: { returnUrl } })} passHref><MuiLink underline="hover">Forgot password?</MuiLink></Link></Typography></Box>
                             </Grid>
                         </Grid>
                         <Box mb={3}>

@@ -68,8 +68,8 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             {
                 UserId = user.Id,
 
-                AccessTokenHash = SecurityHelper.GenerateHash(accessToken),
-                RefreshTokenHash = SecurityHelper.GenerateHash(refreshToken),
+                AccessTokenHash = Algorithm.GenerateHash(accessToken),
+                RefreshTokenHash = Algorithm.GenerateHash(refreshToken),
 
                 AccessTokenExpiresOn = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
                 RefreshTokenExpiresOn = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
@@ -109,8 +109,8 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             {
                 UserId = token.UserId,
 
-                AccessTokenHash = SecurityHelper.GenerateHash(accessToken),
-                RefreshTokenHash = SecurityHelper.GenerateHash(refreshToken),
+                AccessTokenHash = Algorithm.GenerateHash(accessToken),
+                RefreshTokenHash = Algorithm.GenerateHash(refreshToken),
 
                 AccessTokenExpiresOn = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
                 RefreshTokenExpiresOn = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
@@ -152,7 +152,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             if (refreshToken == null)
                 throw new ArgumentNullException(nameof(refreshToken));
 
-            var refreshTokenHash = SecurityHelper.GenerateHash(refreshToken);
+            var refreshTokenHash = Algorithm.GenerateHash(refreshToken);
             return _unitOfWork.Query<BearerToken>().Include(bt => bt.User).FirstOrDefaultAsync(bt => bt.RefreshTokenHash == refreshTokenHash);
         }
 
@@ -165,7 +165,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
             var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Jti, SecurityHelper.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Jti, Algorithm.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
                 new(JwtRegisteredClaimNames.Iss, _bearerTokenOptions.Value.Issuer, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
@@ -196,12 +196,12 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
         private string GenerateRefreshToken(DateTimeOffset now)
         {
-            var refreshTokenSerial = SecurityHelper.CreateCryptographicallySecureGuid().ToString()
+            var refreshTokenSerial = Algorithm.CreateCryptographicallySecureGuid().ToString()
                 .Replace("-", "", StringComparison.Ordinal);
 
             var claims = new List<Claim>
             {
-                new(JwtRegisteredClaimNames.Jti, SecurityHelper.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
+                new(JwtRegisteredClaimNames.Jti, Algorithm.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
                 new(JwtRegisteredClaimNames.Iss, _bearerTokenOptions.Value.Issuer, ClaimValueTypes.String, _bearerTokenOptions.Value.Issuer),
 
@@ -287,7 +287,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             if (accessToken == null)
                 throw new ArgumentNullException(nameof(accessToken));
 
-            var accessTokenHash = SecurityHelper.GenerateHash(accessToken);
+            var accessTokenHash = Algorithm.GenerateHash(accessToken);
             var bearerToken = await _unitOfWork.Query<BearerToken>().FirstOrDefaultAsync(
                 bt => bt.AccessTokenHash == accessTokenHash && bt.UserId == userId);
             return bearerToken?.AccessTokenExpiresOn >= DateTimeOffset.UtcNow;
