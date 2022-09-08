@@ -5,8 +5,8 @@ import { SnackbarProvider } from 'notistack';
 import { findContextualRouteWithComponent } from '../views/routes.views';
 import App from 'next/app';
 import { useRouter } from 'next/router';
-import { useEffect, useRef } from 'react';
-import { ClientProvider, ViewProvider, useView } from '../components';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ClientProvider, ViewProvider, useView, PageProgress } from '../components';
 import { createClient } from '../client';
 
 const theme = createTheme({
@@ -19,12 +19,34 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
   const router = useRouter();
   const view = useView();
 
+  const [progress, setProgress] = useState({
+    animating: false,
+    key: 0,
+  });
+
+  const startProgress = () => {
+    setProgress((prevProgress) => ({
+      animating: true,
+      key: prevProgress.animating ? prevProgress.key : prevProgress.key ^ 1,
+    }));
+  };
+
+  const endProgress = () => {
+    setProgress((prevProgress) => ({
+      ...prevProgress,
+      animating: false
+    }));
+  };
+
   useEffect(() => {
 
     const handleRouteChangeStart = (url, { shallow }) => {
+      startProgress();
     };
 
     const handleRouteChangeComplete = (url, { shallow }) => {
+      endProgress();
+
       const contextualRoute = findContextualRouteWithComponent(url);
       if (contextualRoute) {
         const Component = contextualRoute.Component;
@@ -36,12 +58,15 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
     };
 
     const handleRouteChangeError = (err, url) => {
+      endProgress();
+
       if (err.cancelled) {
         console.log(`Route to ${url} was cancelled!`)
       }
     };
 
     handleRouteChangeComplete(router.asPath, {});
+
     router.events.on('routeChangeStart', handleRouteChangeStart);
     router.events.on('routeChangeComplete', handleRouteChangeComplete);
     router.events.on('routeChangeError', handleRouteChangeError);
@@ -51,17 +76,22 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
       router.events.off('routeChangeComplete', handleRouteChangeComplete);
       router.events.off('routeChangeError', handleRouteChangeError);
     };
-    
+
   }, []);
 
-  return (<Component {...appProps} {...pageProps} />);
+  return (
+    <>
+      <PageProgress {...progress}/>
+      <Component {...appProps} {...pageProps} />
+    </>
+  );
 };
 
 const MyApp = ({ server, ...props }) => {
-  const clientRef = useRef(createClient({ server }));
+  const client = useMemo(() => createClient({ server }), []);
 
   return (
-    <ClientProvider client={clientRef.current}>
+    <ClientProvider client={client}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider maxSnack={3} preventDuplicate anchorOrigin={{ vertical: 'top', horizontal: 'center' }} >
