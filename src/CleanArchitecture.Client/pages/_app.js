@@ -1,51 +1,30 @@
 import '../assets/styles/globals.css';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
 import { findContextualRouteWithComponent } from '../views/routes.views';
 import App from 'next/app';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ClientProvider, ViewProvider, useView, PageProgress } from '../components';
+import { ClientProvider, ViewProvider, useView } from '../components';
 import { createClient } from '../client';
-
-const theme = createTheme({
-  palette: {
-    mode: 'dark',
-  },
-});
+import PageProgressBar from 'react-top-loading-bar';
 
 const PageRoute = ({ Component, pageProps, ...appProps }) => {
   const router = useRouter();
   const view = useView();
+  const theme = useTheme();
 
-  const [progress, setProgress] = useState({
-    animating: false,
-    key: 0,
-  });
-
-  const startProgress = () => {
-    setProgress((prevProgress) => ({
-      animating: true,
-      key: prevProgress.animating ? prevProgress.key : prevProgress.key ^ 1,
-    }));
-  };
-
-  const endProgress = () => {
-    setProgress((prevProgress) => ({
-      ...prevProgress,
-      animating: false
-    }));
-  };
+  const pageProgressBar = useRef(null);
 
   useEffect(() => {
 
     const handleRouteChangeStart = (url, { shallow }) => {
-      startProgress();
+      pageProgressBar.current.continuousStart();
     };
 
     const handleRouteChangeComplete = (url, { shallow }) => {
-      endProgress();
+      pageProgressBar.current.complete();
 
       const contextualRoute = findContextualRouteWithComponent(url);
       if (contextualRoute) {
@@ -58,7 +37,7 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
     };
 
     const handleRouteChangeError = (err, url) => {
-      endProgress();
+      pageProgressBar.current.complete();
 
       if (err.cancelled) {
         console.log(`Route to ${url} was cancelled!`)
@@ -81,11 +60,18 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
 
   return (
     <>
-      <PageProgress {...progress}/>
+      <PageProgressBar color={theme.palette.primary.main} ref={pageProgressBar} />
       <Component {...appProps} {...pageProps} />
     </>
   );
 };
+
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
+
 
 const MyApp = ({ server, ...props }) => {
   const client = useMemo(() => createClient({ server }), []);
