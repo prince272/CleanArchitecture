@@ -1,4 +1,4 @@
-﻿namespace CleanArchitecture.Infrastructure.Extensions.EmailSender
+﻿namespace CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit
 {
     public class MailKitEmailSenderOptions
     {

@@ -45,30 +45,18 @@ const getUserStore = (settings) => {
     const userStorageKey = `_jwt_user_storage_${process.env.NODE_ENV}`;
 
     const storage = createCookieStorage(settings);
-    const subject = new BehaviorSubject(storage.get(userStorageKey));
+    const accessToken = storage.get(accessTokenStorageKey);
+    const refreshToken = storage.get(refreshTokenStorageKey);
+    const user = storage.get(userStorageKey);
 
-    const getAccessToken = () => {
-        return storage.get(accessTokenStorageKey);
-    };
+    const subject = new BehaviorSubject(user ? { ...user, accessToken, refreshToken } : null);
 
     const setAccessToken = (value, ttl) => {
         storage.set(accessTokenStorageKey, value, ttl);
     };
 
-    const removeAccessToken = () => {
-        storage.remove(accessTokenStorageKey);
-    };
-
-    const getRefreshToken = () => {
-        return storage.get(refreshTokenStorageKey);
-    };
-
     const setRefreshToken = (value, ttl) => {
         storage.set(refreshTokenStorageKey, value, ttl);
-    };
-
-    const removeRefreshToken = () => {
-        storage.remove(refreshTokenStorageKey);
     };
 
     const setUser = (value, ttl) => {
@@ -76,28 +64,18 @@ const getUserStore = (settings) => {
         subject.next(value);
     };
 
-    const removeUser = () => {
+    const clear = () => {
+        storage.remove(accessTokenStorageKey);
+        storage.remove(refreshTokenStorageKey);
         storage.remove(userStorageKey);
+
         subject.next(null);
     };
 
-    const clear = () => {
-        removeAccessToken();
-        removeRefreshToken();
-        removeUser();
-    };
-
     return {
-        getAccessToken,
         setAccessToken,
-        removeAccessToken,
-
-        getRefreshToken,
         setRefreshToken,
-        removeRefreshToken,
-
         setUser,
-        removeUser,
 
         subject,
         clear
@@ -113,10 +91,7 @@ const getErrorState = (config) => {
     return errorState;
 };
 
-const axiosJwt = (axios, settings) => {
-
-    const authHeaderKey = 'Authorization';
-    const authHeaderPrefix = 'Bearer ';
+const axiosAuth = (axios, settings) => {
 
     const defaultSettings = {
         unauthorized: (response) => {
@@ -151,16 +126,14 @@ const axiosJwt = (axios, settings) => {
 
     // Add a request interceptor
     axios.interceptors.request.use((config) => {
-        const accessToken = store.getAccessToken();
-        const refreshToken = store.getRefreshToken();
         const user = store.subject.getValue();
 
-        if (accessToken && refreshToken && user) {
-            config.headers[authHeaderKey] = `${authHeaderPrefix}${accessToken}`;
+        if (user && user.accessToken && user.refreshToken) {
+            config.headers[settings.authHeaderName] = `${settings.authHeaderPrefix}${accessToken}`;
         }
         else {
-            delete config.headers[authHeaderKey];
-            delete axios.defaults.headers.common[authHeaderKey];
+            delete config.headers[settings.authHeaderName];
+            delete axios.defaults.headers.common[settings.authHeaderName];
         }
 
         return config;
@@ -192,10 +165,9 @@ const axiosJwt = (axios, settings) => {
                             });
                     }
                     else {
+                        const user = store.subject.getValue();
 
-                        const refreshToken = store.getRefreshToken();
-
-                        if (!refreshToken) {
+                        if (!user?.refreshToken) {
                             store.clear();
                             return Promise.reject(error);
                         }
@@ -264,9 +236,9 @@ const axiosJwt = (axios, settings) => {
                 });
         },
         signout: () => {
-            const refreshToken = store.getRefreshToken();
+            const user = store.subject.getValue();
 
-            if (!refreshToken) {
+            if (!user?.refreshToken) {
                 store.clear();
                 return Promise.resolve();
             }
@@ -284,4 +256,4 @@ const axiosJwt = (axios, settings) => {
     }
 };
 
-export { axiosJwt };
+export { axiosAuth };

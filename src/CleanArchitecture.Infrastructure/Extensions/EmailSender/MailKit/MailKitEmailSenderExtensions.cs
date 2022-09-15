@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Infrastructure.Extensions.EmailSender
+namespace CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit
 {
     public static class MailKitEmailSenderExtensions
     {

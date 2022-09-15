@@ -7,12 +7,12 @@ namespace CleanArchitecture.Server.Extensions.Hosting
     public class ClientServer : IClientServer
     {
         private readonly IServer _server;
-        private readonly IOptions<ClientServerOptions> _peerOptions;
+        private readonly ClientServerOptions _clientServerOptions;
 
-        public ClientServer(IServer server, IOptions<ClientServerOptions> peerOptions)
+        public ClientServer(IServer server, IOptions<ClientServerOptions> clientServerOptions)
         {
             _server = server ?? throw new ArgumentNullException(nameof(server));
-            _peerOptions = peerOptions ?? throw new ArgumentNullException(nameof(peerOptions));
+            _clientServerOptions = clientServerOptions.Value ?? throw new ArgumentNullException(nameof(clientServerOptions));
         }
 
         public string[] ServerUrls
@@ -28,7 +28,7 @@ namespace CleanArchitecture.Server.Extensions.Hosting
         {
             get
             {
-                return _peerOptions.Value.ClientUrls;
+                return _clientServerOptions.ClientUrls;
             }
         }
 

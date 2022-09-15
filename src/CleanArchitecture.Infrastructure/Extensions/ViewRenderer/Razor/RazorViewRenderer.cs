@@ -17,7 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Infrastructure.Extensions.ViewRenderer
+namespace CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor
 {
     public class RazorViewRenderer : IViewRenderer
     {
@@ -32,10 +32,10 @@ namespace CleanArchitecture.Infrastructure.Extensions.ViewRenderer
             IServiceProvider serviceProvider,
             IOptions<RazorViewRendererOptions> viewRendererOptions)
         {
-            _viewEngine = viewEngine;
-            _tempDataProvider = tempDataProvider;
-            _serviceProvider = serviceProvider;
-            _viewRendererOptions = viewRendererOptions.Value;
+            _viewEngine = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
+            _tempDataProvider = tempDataProvider ?? throw new ArgumentNullException(nameof(tempDataProvider));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _viewRendererOptions = viewRendererOptions.Value ?? throw new ArgumentNullException(nameof(viewRendererOptions));
         }
 
         public async Task<string> RenderToStringAsync<TModel>(string viewName, TModel model, CancellationToken cancellationToken = default)

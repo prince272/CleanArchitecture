@@ -30,7 +30,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
         private readonly UserManager<User> _userManager;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IAntiforgery _antiforgery;
-        private readonly IOptions<AntiforgeryOptions> _antiforgeryOptions;
+        private readonly AntiforgeryOptions _antiforgeryOptions;
 
         public BearerTokenProvider(
             IOptionsSnapshot<BearerTokenOptions> authenticationOptions,
@@ -47,7 +47,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _antiforgery = antiforgery ?? throw new ArgumentNullException(nameof(antiforgery));
-            _antiforgeryOptions = antiforgeryOptions ?? throw new ArgumentNullException(nameof(antiforgery));
+            _antiforgeryOptions = antiforgeryOptions.Value ?? throw new ArgumentNullException(nameof(antiforgeryOptions));
         }
 
         public async Task<BearerTokenData> GenerateTokenAsync(User user)
@@ -250,7 +250,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 return;
             }
 
-            var cookieName = _antiforgeryOptions.Value.Cookie.Name;
+            var cookieName = _antiforgeryOptions.Cookie.Name;
             if (string.IsNullOrWhiteSpace(cookieName))
             {
                 return;

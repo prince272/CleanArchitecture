@@ -16,12 +16,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Humanizer;
 using FluentValidation;
-using CleanArchitecture.Server.Extensions;
 using CleanArchitecture.Server.Extensions.Hosting;
-using CleanArchitecture.Infrastructure.Extensions.EmailSender;
 using CleanArchitecture.Infrastructure.Extensions.SmsSender;
 using CleanArchitecture.Server.Extensions.Authentication;
 using CleanArchitecture.Server.Extensions.Anonymous;
+using CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit;
+using CleanArchitecture.Infrastructure.Extensions.FileStorage.Local;
+using CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -195,6 +196,11 @@ builder.Services.AddSmsSender(options => { });
 
 builder.Services.AddClientServer(options => {
     options.ClientUrls = builder.Configuration.GetSection("ClientUrls").Get<string[]>(); 
+});
+
+builder.Services.AddLocalFileStorage(options =>
+{
+    options.RootPath = builder.Environment.WebRootPath;
 });
 
 builder.Services.AddResponseCompression();

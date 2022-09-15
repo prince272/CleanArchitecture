@@ -34,7 +34,7 @@ namespace CleanArchitecture.Server.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IEmailSender _emailSender;
         private readonly ISmsSender _smsSender;
-        private readonly IOptions<AppSettings> _appSettings;
+        private readonly AppSettings _appSettings;
         private readonly IViewRenderer _viewRenderer;
         private readonly IClientServer _clientServer;
         private readonly IMapper _mapper;
@@ -57,7 +57,7 @@ namespace CleanArchitecture.Server.Controllers
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _smsSender = smsSender ?? throw new ArgumentNullException(nameof(smsSender));
-            _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
+            _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
             _viewRenderer = viewRenderer ?? throw new ArgumentNullException(nameof(viewRenderer));
             _clientServer = clientServer ?? throw new ArgumentNullException(nameof(viewRenderer));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -156,7 +156,7 @@ namespace CleanArchitecture.Server.Controllers
 
                         var message = new
                         {
-                            From = _appSettings.Value.Mailing.Accounts["Support"],
+                            From = _appSettings.Mailing.Accounts["Support"],
                             To = form.Username,
                             Subject = $"Confirm Your {formUsernameType.Humanize(LetterCasing.Title)}",
                             Body = await _viewRenderer.RenderToStringAsync("Email/VerifyAccount", (user, (IVerifyAccountForm)form, formUsernameType))
@@ -270,7 +270,7 @@ namespace CleanArchitecture.Server.Controllers
 
                         var message = new
                         {
-                            From = _appSettings.Value.Mailing.Accounts["Support"],
+                            From = _appSettings.Mailing.Accounts["Support"],
                             To = form.Username,
                             Subject = $"Reset Your Password",
                             Body = await _viewRenderer.RenderToStringAsync("Email/ResetPassword", (user, (IResetPasswordForm)form))

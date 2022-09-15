@@ -12,8 +12,8 @@ namespace CleanArchitecture.Server.Extensions.Anonymous
 
         public AnonymousMiddleware(RequestDelegate nextDelegate, IOptions<AnonymousCookieOptionsBuilder> cookieOptionsBuilder)
         {
-            this.nextDelegate = nextDelegate;
-            this.cookieOptionsBuilder = cookieOptionsBuilder.Value;
+            this.nextDelegate = nextDelegate ?? throw new ArgumentNullException(nameof(nextDelegate));
+            this.cookieOptionsBuilder = cookieOptionsBuilder.Value ?? throw new ArgumentNullException(nameof(cookieOptionsBuilder));
         }
 
         public async Task Invoke(HttpContext httpContext)

@@ -33,3 +33,6 @@ export { DialogCloseButton };
 
 export { default as ClientContext } from './ClientContext';
 export * from './ClientContext';
+
+export { default as FileUploader } from './FileUploader';
+export * from './FileUploader'; 

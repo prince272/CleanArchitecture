@@ -17,4 +17,9 @@
 		<ProjectReference Include="..\CleanArchitecture.Infrastructure\CleanArchitecture.Infrastructure.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Models\Media\" />
+	  <Folder Include="wwwroot\media\" />
+	</ItemGroup>
+
 </Project>

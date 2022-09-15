@@ -1,4 +1,4 @@
-﻿namespace CleanArchitecture.Infrastructure.Extensions.ViewRenderer
+﻿namespace CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor
 {
     public class RazorViewRendererOptions
     {
