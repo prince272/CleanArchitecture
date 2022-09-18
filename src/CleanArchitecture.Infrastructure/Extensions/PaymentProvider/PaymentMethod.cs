@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 {
-
-    public interface IPaymentProvider : IPaymentProcessor
+    public enum PaymentMethod
     {
+        PlasticMoney,
+        MobileMoney,
+        PaySwitch
     }
 }

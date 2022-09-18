@@ -74,11 +74,42 @@ namespace CleanArchitecture.Core.Helpers
             return text;
         }
 
-        public static string GenerateHash(string plainText)
+        public static string GenerateHash(string input)
         {
-            var byteValue = Encoding.UTF8.GetBytes(plainText);
+            var byteValue = Encoding.UTF8.GetBytes(input);
             var byteHash = SHA256.HashData(byteValue);
             return Convert.ToBase64String(byteHash);
+        }
+
+        public static string GenerateMD5(string input)
+        {
+            // Use input string to calculate MD5 hash
+            using MD5 md5 = MD5.Create();
+            byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+            // Convert the byte array to hexadecimal string
+            var sb = new StringBuilder();
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+                sb.Append(hashBytes[i].ToString("X2"));
+            }
+            return sb.ToString();
+        }
+
+        public static string GenerateMD5(Stream input)
+        {
+            // Use input string to calculate MD5 hash
+            using MD5 md5 = MD5.Create();
+            byte[] hashBytes = md5.ComputeHash(input);
+
+            // Convert the byte array to hexadecimal string
+            var sb = new StringBuilder();
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+                sb.Append(hashBytes[i].ToString("X2"));
+            }
+            return sb.ToString();
         }
 
         public static Guid CreateCryptographicallySecureGuid()

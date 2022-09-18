@@ -61,8 +61,11 @@ const getUserStore = (settings) => {
 
     const setUser = (value, ttl) => {
         storage.set(userStorageKey, value, ttl);
-        subject.next(value);
     };
+
+    const updateUser = (value) => {
+        subject.next(value);
+    }
 
     const clear = () => {
         storage.remove(accessTokenStorageKey);
@@ -76,7 +79,7 @@ const getUserStore = (settings) => {
         setAccessToken,
         setRefreshToken,
         setUser,
-
+        updateUser,
         subject,
         clear
     };
@@ -129,7 +132,7 @@ const axiosAuth = (axios, settings) => {
         const user = store.subject.getValue();
 
         if (user && user.accessToken && user.refreshToken) {
-            config.headers[settings.authHeaderName] = `${settings.authHeaderPrefix}${accessToken}`;
+            config.headers[settings.authHeaderName] = `${settings.authHeaderPrefix}${user.accessToken}`;
         }
         else {
             delete config.headers[settings.authHeaderName];
@@ -181,6 +184,8 @@ const axiosAuth = (axios, settings) => {
                                 store.setAccessToken(accessToken, accessTokenExpiresIn);
                                 store.setRefreshToken(refreshToken, refreshTokenExpiresIn);
                                 store.setUser(user, refreshTokenExpiresIn);
+
+                                store.updateUser({ ...user, accessToken, refreshToken });
                             })
                             .catch((error) => {
 
@@ -232,6 +237,8 @@ const axiosAuth = (axios, settings) => {
                     store.setAccessToken(accessToken, accessTokenExpiresIn);
                     store.setRefreshToken(refreshToken, refreshTokenExpiresIn);
                     store.setUser(user, refreshTokenExpiresIn);
+
+                    store.updateUser({ ...user, accessToken, refreshToken });
                     return response;
                 });
         },

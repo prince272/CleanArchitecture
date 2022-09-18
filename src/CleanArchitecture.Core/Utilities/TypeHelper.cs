@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -88,72 +89,28 @@ namespace CleanArchitecture.Core.Helpers
         }
 
 
-        /// <summary>
-        /// Converts a value to a destination type.
-        /// </summary>
-        /// <param name="value">The value to convert.</param>
-        /// <param name="destinationType">The type to convert the value to.</param>
-        /// <returns>The converted value.</returns>
-        public static object? ParseObject(object value, Type destinationType)
-        {
-            return ParseObject(value, destinationType, CultureInfo.InvariantCulture);
-        }
+        static readonly ConcurrentDictionary<Type, bool> IsSimpleTypeCache = new ConcurrentDictionary<System.Type, bool>();
 
-        public static bool TryParseObject(object value, Type destinationType, out object? result)
+        // How To Test if Type is Primitive
+        // source: https://stackoverflow.com/questions/2442534/how-to-test-if-type-is-primitive
+        public static bool IsPrimitiveType(Type type)
         {
-            try
+            return IsSimpleTypeCache.GetOrAdd(type, t =>
+                type.IsPrimitive ||
+                type.IsEnum ||
+                type == typeof(string) ||
+                type == typeof(decimal) ||
+                type == typeof(DateTime) ||
+                type == typeof(DateTimeOffset) ||
+                type == typeof(TimeSpan) ||
+                type == typeof(Guid) ||
+                IsNullableSimpleType(type));
+
+            static bool IsNullableSimpleType(Type t)
             {
-                result = ParseObject(value, destinationType);
-                return true;
+                var underlyingType = Nullable.GetUnderlyingType(t);
+                return underlyingType != null && IsPrimitiveType(underlyingType);
             }
-            catch (Exception ex)
-            {
-                result = null;
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Converts a value to a destination type.
-        /// </summary>
-        /// <param name="value">The value to convert.</param>
-        /// <param name="destinationType">The type to convert the value to.</param>
-        /// <param name="culture">Culture</param>
-        /// <returns>The converted value.</returns>
-        public static object? ParseObject(object value, Type destinationType, CultureInfo culture)
-        {
-            if (value == null)
-                return null;
-
-            var sourceType = value.GetType();
-
-            var destinationConverter = TypeDescriptor.GetConverter(destinationType);
-            if (destinationConverter.CanConvertFrom(value.GetType()))
-                return destinationConverter.ConvertFrom(null, culture, value);
-
-            var sourceConverter = TypeDescriptor.GetConverter(sourceType);
-            if (sourceConverter.CanConvertTo(destinationType))
-                return sourceConverter.ConvertTo(null, culture, value, destinationType);
-
-            if (destinationType.IsEnum && value is int)
-                return Enum.ToObject(destinationType, (int)value);
-
-            if (!destinationType.IsInstanceOfType(value))
-                return Convert.ChangeType(value, destinationType, culture);
-
-            return value;
-        }
-
-        /// <summary>
-        /// Converts a value to a destination type.
-        /// </summary>
-        /// <param name="value">The value to convert.</param>
-        /// <typeparam name="T">The type to convert the value to.</typeparam>
-        /// <returns>The converted value.</returns>
-        public static T? ParseObject<T>(object value)
-        {
-            //return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
-            return (T?)ParseObject(value, typeof(T));
         }
     }
 }

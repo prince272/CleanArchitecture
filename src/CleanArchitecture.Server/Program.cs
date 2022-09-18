@@ -17,12 +17,14 @@ using System.Text.Json.Serialization;
 using Humanizer;
 using FluentValidation;
 using CleanArchitecture.Server.Extensions.Hosting;
-using CleanArchitecture.Infrastructure.Extensions.SmsSender;
 using CleanArchitecture.Server.Extensions.Authentication;
 using CleanArchitecture.Server.Extensions.Anonymous;
 using CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit;
 using CleanArchitecture.Infrastructure.Extensions.FileStorage.Local;
 using CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor;
+using CleanArchitecture.Infrastructure.Extensions.SmsSender.Twilio;
+using CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch;
+using CleanArchitecture.Infrastructure.Extensions.PaymentProvider;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -137,8 +139,9 @@ builder.Services.AddAuthentication(options =>
         options.Audience = builder.Configuration.GetValue<string>("Authentication:Default:Audience");
         options.Secret = builder.Configuration.GetValue<string>("Authentication:Default:Secret");
 
-        options.AccessTokenExpiresIn = TimeSpan.FromSeconds(15);
-        options.RefeshTokenExpiresIn = TimeSpan.FromMinutes(90);
+        // source: https://cloud.google.com/apigee/docs/api-platform/antipatterns/oauth-long-expiration
+        options.AccessTokenExpiresIn = TimeSpan.FromMinutes(30);
+        options.RefeshTokenExpiresIn = TimeSpan.FromDays(200);
 
         options.MultipleAuthentication = true;
 
@@ -202,6 +205,8 @@ builder.Services.AddLocalFileStorage(options =>
 {
     options.RootPath = builder.Environment.WebRootPath;
 });
+
+builder.Services.AddPaySwitchProvider(Options => { });
 
 builder.Services.AddResponseCompression();
 

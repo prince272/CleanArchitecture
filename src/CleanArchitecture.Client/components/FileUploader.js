@@ -17,8 +17,8 @@ import { AUTH_HEADER_NAME, AUTH_HEADER_PREFIX, SERVER_URL } from '../client';
 
 // Register the plugins
 registerPlugin(
-    FilePondPluginImageExifOrientation, 
-    FilePondPluginImagePreview, 
+    FilePondPluginImageExifOrientation,
+    FilePondPluginImagePreview,
     FilePondPluginMediaPreview);
 
 // Our app
@@ -32,7 +32,7 @@ export const FileUploader = (props) => {
             onupdatefiles={setFiles}
             allowMultiple={true}
             allowVideoPreview={true}    // default true
-            allowAudioPreview={true} 
+            allowAudioPreview={true}
             maxFiles={3}
             name="files"
             labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
@@ -41,7 +41,7 @@ export const FileUploader = (props) => {
             server={{
                 url: SERVER_URL,
                 process: {
-                    url: '/media',
+                    url: '/account/media',
                     method: 'POST',
                     headers: (file) => {
                         const headers = {
@@ -73,18 +73,19 @@ export const FileUploader = (props) => {
                     // source: https://gist.github.com/pizzarob/6c9efc583a17c2643505e7d70ffb1e0e
                     let xhr = new XMLHttpRequest();
                     xhr.open('DELETE', SERVER_URL + path);
-                    xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-            
+                    xhr.setRequestHeader('Content-Type', 'application/offset+octet-stream');
+                    if (client.user) { xhr.setRequestHeader(AUTH_HEADER_NAME, `${AUTH_HEADER_PREFIX}${client.user.accessToken}`); }
+
                     xhr.addEventListener('load', () => {
                         let { response, status } = xhr;
-                        let res = () => { try { return JSON.parse(response); } catch (ex) { return response }};
-                        if(status >= 200 && status < 400){
+                        let res = () => { try { return JSON.parse(response); } catch (ex) { return response } };
+                        if (status >= 200 && status < 400) {
                             load();
-                        } else{
+                        } else {
                             error(res);
                         }
                     });
-            
+
                     xhr.send();
                 },
             }} />

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
 {
-    public class PaySwitchOptions
+    public class PaySwitchPaymentProcessorOptions
     {
     }
 }

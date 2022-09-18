@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 {
-
-    public interface IPaymentProvider : IPaymentProcessor
+    public interface IPaymentMethod
     {
+        PaymentMethod SupportedMethods { get; }
     }
 }

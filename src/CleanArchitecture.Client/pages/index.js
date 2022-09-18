@@ -37,6 +37,7 @@ export default function Home(props) {
       <br />
 
       <main>
+        {JSON.stringify(client.user)}
         <FileUploader />
       </main>
     </div>

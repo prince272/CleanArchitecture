@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 {
-
-    public interface IPaymentProvider : IPaymentProcessor
+    public interface IPaymentProcessor
     {
+        Task<PaymentResult> ProcessAsync(IDictionary<string, object> details);
     }
 }

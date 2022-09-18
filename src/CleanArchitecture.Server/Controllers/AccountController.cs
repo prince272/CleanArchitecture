@@ -2,7 +2,9 @@
 using CleanArchitecture.Core;
 using CleanArchitecture.Core.Entities;
 using CleanArchitecture.Core.Helpers;
+using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Infrastructure.Extensions.EmailSender;
+using CleanArchitecture.Infrastructure.Extensions.FileStorage;
 using CleanArchitecture.Infrastructure.Extensions.SmsSender;
 using CleanArchitecture.Infrastructure.Extensions.ViewRenderer;
 using CleanArchitecture.Server.Extensions.Authentication;
@@ -37,6 +39,8 @@ namespace CleanArchitecture.Server.Controllers
         private readonly AppSettings _appSettings;
         private readonly IViewRenderer _viewRenderer;
         private readonly IClientServer _clientServer;
+        private readonly IFileStorage _fileStorage;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public AccountController(
@@ -49,6 +53,8 @@ namespace CleanArchitecture.Server.Controllers
             IOptions<AppSettings> appSettings,
             IViewRenderer viewRenderer,
             IClientServer clientServer,
+            IFileStorage fileStorage, 
+            IUnitOfWork unitOfWork,
             IMapper mapper)
         {
             _bearerTokenProvider = bearerTokenProvider ?? throw new ArgumentNullException(nameof(bearerTokenProvider));
@@ -60,11 +66,13 @@ namespace CleanArchitecture.Server.Controllers
             _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
             _viewRenderer = viewRenderer ?? throw new ArgumentNullException(nameof(viewRenderer));
             _clientServer = clientServer ?? throw new ArgumentNullException(nameof(viewRenderer));
+            _fileStorage = fileStorage ?? throw new ArgumentNullException(nameof(fileStorage));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         [HttpPost("account/register")]
-        public async Task<IActionResult> Register([FromBody] CreateAccountForm form)
+        public async Task<IActionResult> RegisterAccount([FromBody] CreateAccountForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<CreateAccountValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
@@ -397,7 +405,7 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/token/generate")]
-        public async Task<IActionResult> Generate([FromBody] CreateAccountTokenForm form)
+        public async Task<IActionResult> GenerateToken([FromBody] CreateAccountTokenForm form)
         {
             var formState = await HttpContext.RequestServices.GetRequiredService<CreateAccountTokenValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
@@ -435,7 +443,7 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/{provider}/token/generate")]
-        public async Task<IActionResult> Generate([FromRoute] string provider)
+        public async Task<IActionResult> GenerateToken([FromRoute] string provider)
         {
             if (provider == null) return ValidationProblem(title: $"'{nameof(provider)}' is required.");
 
@@ -557,6 +565,83 @@ namespace CleanArchitecture.Server.Controllers
             // Request a redirect to the external sign-in provider.
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, returnUrl);
             return Challenge(properties, provider);
+        }
+
+        [Authorize]
+        [AcceptVerbs("POST", "PATCH", Route = "account/media/{**catchAll}")]
+        public async Task<IActionResult> ProcessMedia()
+        {
+            var uploadName = Request.Headers["Upload-Name"].ToString();
+            var uploadLength = Request.Headers["Upload-Length"].To<long>();
+            var uploadExtension = Path.GetExtension(uploadName);
+            var uploadMimeType = MimeTypeMap.GetMimeType(uploadName);
+
+            var acceptFileTypes = (Request.Headers.GetCommaSeparatedValues("Accept-File-Types") ?? Array.Empty<string>());
+
+            var mediaRule = _appSettings.Media.Rules.FirstOrDefault(
+                   _ =>
+                   _.Value.FileTypes.Intersect(!acceptFileTypes.Any() ? new[] { uploadExtension } : acceptFileTypes)
+                   .Contains(uploadExtension, StringComparer.InvariantCultureIgnoreCase) ||
+
+                   _.Value.FileTypes.Intersect(!acceptFileTypes.Any() ? new[] { uploadMimeType } : acceptFileTypes)
+                   .Contains(uploadMimeType, StringComparer.InvariantCultureIgnoreCase)).Value;
+
+            if (mediaRule == null)
+                return ValidationProblem(title: "The file type is not supported.");
+
+            if (uploadLength > mediaRule.FileSize)
+                return ValidationProblem(title: "The file size is too large.");
+
+            if (HttpMethods.IsPost(Request.Method))
+            {
+                var uploadPath = $"/account/media/{mediaRule.MediaType.ToString().ToLowerInvariant()}/{Algorithm.CreateCryptographicallySecureGuid()}{uploadExtension}";
+                await _fileStorage.PrepareAsync(uploadPath);
+                return Ok(uploadPath);
+            }
+            else if (HttpMethods.IsPatch(Request.Method))
+            {
+                var path = Request.Path.ToString();
+                var uploadOffset = Request.Headers["Upload-Offset"].To<long>();
+
+                using var chunkStream = new MemoryStream(await Request.Body.ToBytesAsync());
+                using var fileStream = await _fileStorage.WriteAsync(path, chunkStream, uploadOffset, uploadLength);
+
+                if (fileStream != null)
+                {
+                    var media = new Media();
+                    media.Name = uploadName;
+                    media.Path = path;
+                    media.Size = uploadLength;
+                    media.MimeType = uploadMimeType;
+                    media.Type = mediaRule.MediaType;
+
+                    _unitOfWork.Add(media);
+                    await _unitOfWork.CompleteAsync();
+                }
+
+                return Ok();
+            }
+            else throw new InvalidOperationException();
+        }
+
+        [Authorize]
+        [HttpDelete("account/media/{**catchAll}")]
+        public async Task<IActionResult> RevertMedia()
+        {
+            var path = Request.Path.ToString();
+            await _fileStorage.DeleteAsync(path);
+
+            var media = await _unitOfWork.Query<Media>().FirstOrDefaultAsync(_ => _.Path == path);
+            if (media != null)
+            {
+                _unitOfWork.Remove(media);
+                await _unitOfWork.CompleteAsync();
+                return Ok();
+            }
+            else
+            {
+                return NotFound();
+            }
         }
     }
 }
