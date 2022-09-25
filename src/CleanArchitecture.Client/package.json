@@ -25,6 +25,9 @@
     "filepond-plugin-image-exif-orientation": "^1.0.11",
     "filepond-plugin-image-preview": "^4.6.11",
     "filepond-plugin-media-preview": "^1.0.11",
+    "libphonenumber-js": "^1.10.13",
+    "lodash": "^4.17.21",
+    "mui-tel-input": "^2.0.2",
     "next": "12.1.4",
     "notistack": "^2.0.5",
     "prop-types": "^15.8.1",
@@ -33,7 +36,6 @@
     "react-dom": "18.2.0",
     "react-filepond": "^7.1.2",
     "react-hook-form": "^7.34.2",
-    "react-phone-number-input": "^3.2.7",
     "react-top-loading-bar": "^2.3.1",
     "rxjs": "^7.5.6",
     "use-timer": "^2.0.1"

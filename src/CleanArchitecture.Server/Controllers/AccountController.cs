@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using CleanArchitecture.Core;
 using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Helpers;
+using CleanArchitecture.Core.Utilities;
 using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Infrastructure.Extensions.EmailSender;
 using CleanArchitecture.Infrastructure.Extensions.FileStorage;
@@ -82,17 +82,17 @@ namespace CleanArchitecture.Server.Controllers
             if (user != null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is already registered.");
+                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is already registered.");
                 return ValidationProblem(errors);
             }
 
             user = new User();
-            var userContactType = ContactHelper.Switch(form.Username);
+            var formUsernameType = ContactHelper.GetContactType(form.Username);
 
-            switch (userContactType)
+            switch (formUsernameType)
             {
-                case ContactType.EmailAddress: user.Email = form.Username; break;
-                case ContactType.PhoneNumber: user.PhoneNumber = form.Username; break;
+                case ContactType.EmailAddress: user.Email = ContactHelper.ParseEmailAddress(form.Username).Address; break;
+                case ContactType.PhoneNumber: user.PhoneNumber = ContactHelper.ParsePhoneNumber(form.Username).Number; break;
                 default: throw new InvalidOperationException();
             }
             user.FirstName = form.FirstName;
@@ -135,7 +135,7 @@ namespace CleanArchitecture.Server.Controllers
                 if (user != null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is already registered.");
+                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is already registered.");
                     return ValidationProblem(errors);
                 }
 
@@ -148,24 +148,25 @@ namespace CleanArchitecture.Server.Controllers
                 if (user == null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                     return ValidationProblem(errors);
                 }
             }
             else throw new InvalidOperationException();
 
-            var formUsernameType = ContactHelper.Switch(form.Username);
+            var formUsernameType = ContactHelper.GetContactType(form.Username);
 
             switch (formUsernameType)
             {
                 case ContactType.EmailAddress:
                     {
-                        ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangeEmailTokenAsync(user, form.Username);
+                        var formEmailAdress = ContactHelper.ParseEmailAddress(form.Username).Address;
+                        ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangeEmailTokenAsync(user, formEmailAdress);
 
                         var message = new
                         {
-                            From = _appSettings.Mailing.Accounts["Support"],
-                            To = form.Username,
+                            From = _appSettings.MailSettings.Accounts["Support"],
+                            To = formEmailAdress,
                             Subject = $"Confirm Your {formUsernameType.Humanize(LetterCasing.Title)}",
                             Body = await _viewRenderer.RenderToStringAsync("Email/VerifyAccount", (user, (IVerifyAccountForm)form, formUsernameType))
                         };
@@ -175,15 +176,16 @@ namespace CleanArchitecture.Server.Controllers
                     break;
                 case ContactType.PhoneNumber:
                     {
-                        ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangePhoneNumberTokenAsync(user, form.Username);
+                        var formPhoneNumber = ContactHelper.ParsePhoneNumber(form.Username).Number;
+                        ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangePhoneNumberTokenAsync(user, formPhoneNumber);
 
                         var message = new
                         {
-                            PhoneNumber = form.Username,
+                            To = formPhoneNumber,
                             Body = HtmlHelper.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/VerifyAccount", (user, (IVerifyAccountForm)form, formUsernameType)))
                         };
 
-                        await _smsSender.SendAsync(message.PhoneNumber, message.Body);
+                        await _smsSender.SendAsync(message.To, message.Body);
                     }
                     break;
 
@@ -211,7 +213,7 @@ namespace CleanArchitecture.Server.Controllers
                 if (user != null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is already registered.");
+                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is already registered.");
                     return ValidationProblem(errors);
                 }
 
@@ -224,7 +226,7 @@ namespace CleanArchitecture.Server.Controllers
                 if (user == null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                     return ValidationProblem(errors);
                 }
             }
@@ -232,9 +234,9 @@ namespace CleanArchitecture.Server.Controllers
 
             var result = default(IdentityResult);
 
-            var userContactType = ContactHelper.Switch(form.Username);
+            var formUsernameType = ContactHelper.GetContactType(form.Username);
 
-            switch (userContactType)
+            switch (formUsernameType)
             {
                 case ContactType.EmailAddress: result = await _userManager.ChangeEmailAsync(user, user.Email, form.Code); break;
                 case ContactType.PhoneNumber: result = await _userManager.ChangePhoneNumberAsync(user, user.PhoneNumber, form.Code); break;
@@ -264,22 +266,23 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                 return ValidationProblem(errors);
             }
 
-            var userContactType = ContactHelper.Switch(form.Username);
+            var formUsernameType = ContactHelper.GetContactType(form.Username);
 
-            switch (userContactType)
+            switch (formUsernameType)
             {
                 case ContactType.EmailAddress:
                     {
+                        var formEmailAddress = ContactHelper.ParseEmailAddress(form.Username).Address;
                         ((IResetPasswordForm)form).Code = await _userManager.GeneratePasswordResetTokenAsync(user);
 
                         var message = new
                         {
-                            From = _appSettings.Mailing.Accounts["Support"],
-                            To = form.Username,
+                            From = _appSettings.MailSettings.Accounts["Support"],
+                            To = formEmailAddress,
                             Subject = $"Reset Your Password",
                             Body = await _viewRenderer.RenderToStringAsync("Email/ResetPassword", (user, (IResetPasswordForm)form))
                         };
@@ -289,15 +292,16 @@ namespace CleanArchitecture.Server.Controllers
                     break;
                 case ContactType.PhoneNumber:
                     {
+                        var formPhoneNumber = ContactHelper.ParsePhoneNumber(form.Username).Number;
                         ((IResetPasswordForm)form).Code = await _userManager.GeneratePasswordResetTokenAsync(user);
 
                         var message = new
                         {
-                            PhoneNumber = form.Username,
+                            To = formPhoneNumber,
                             Body = HtmlHelper.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/ResetPassword", (user, (IResetPasswordForm)form)))
                         };
 
-                        await _smsSender.SendAsync(message.PhoneNumber, message.Body);
+                        await _smsSender.SendAsync(message.To, message.Body);
                     }
                     break;
 
@@ -317,7 +321,7 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                 return ValidationProblem(errors);
             }
 
@@ -342,7 +346,7 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' does not exist.");
+                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                 return ValidationProblem(errors);
             }
 
@@ -415,21 +419,21 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is not registered.");
+                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is not registered.");
                 return ValidationProblem(errors);
             }
 
             if (!await _userManager.CheckPasswordAsync(user, form.Password))
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Password, $"'{ContactHelper.Switch(form.Password).Humanize()}' is not correct.");
+                errors.Add(() => form.Password, $"'{ContactHelper.GetContactType(form.Password).Humanize()}' is not correct.");
                 return ValidationProblem(errors);
             }
 
             if (!user.EmailConfirmed && !user.PhoneNumberConfirmed)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.Switch(form.Username).Humanize()}' is not confirmed.");
+                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is not confirmed.");
                 return ValidationProblem(errors, extensions: new Dictionary<string, object?>()
                 {
                     ["Reason"] = SignInReason.RequiresVerification,
@@ -523,7 +527,7 @@ namespace CleanArchitecture.Server.Controllers
             if (token == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.RefreshToken, $"'{ContactHelper.Switch(form.RefreshToken).Humanize()}' is not valid.");
+                errors.Add(() => form.RefreshToken, $"'{ContactHelper.GetContactType(form.RefreshToken).Humanize()}' is not valid.");
                 return ValidationProblem(errors);
             }
 
@@ -543,7 +547,7 @@ namespace CleanArchitecture.Server.Controllers
             if (token == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.RefreshToken, $"'{ContactHelper.Switch(form.RefreshToken).Humanize()}' is not valid.");
+                errors.Add(() => form.RefreshToken, $"'{ContactHelper.GetContactType(form.RefreshToken).Humanize()}' is not valid.");
                 return ValidationProblem(errors);
             }
 
@@ -578,7 +582,7 @@ namespace CleanArchitecture.Server.Controllers
 
             var acceptFileTypes = (Request.Headers.GetCommaSeparatedValues("Accept-File-Types") ?? Array.Empty<string>());
 
-            var mediaRule = _appSettings.Media.Rules.FirstOrDefault(
+            var mediaRule = _appSettings.MediaSettings.Rules.FirstOrDefault(
                    _ =>
                    _.Value.FileTypes.Intersect(!acceptFileTypes.Any() ? new[] { uploadExtension } : acceptFileTypes)
                    .Contains(uploadExtension, StringComparer.InvariantCultureIgnoreCase) ||
@@ -594,7 +598,10 @@ namespace CleanArchitecture.Server.Controllers
 
             if (HttpMethods.IsPost(Request.Method))
             {
-                var uploadPath = $"/account/media/{mediaRule.MediaType.ToString().ToLowerInvariant()}/{Algorithm.CreateCryptographicallySecureGuid()}{uploadExtension}";
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
+
+                var uploadPath = $"/account/media/{mediaRule.MediaType.ToString().ToLowerInvariant()}/{currentUser.Id}/{Algorithm.CreateCryptographicallySecureGuid()}{uploadExtension}";
                 await _fileStorage.PrepareAsync(uploadPath);
                 return Ok(uploadPath);
             }

@@ -6,11 +6,15 @@ import SignInDialog from './account/SignInDialog';
 import SignOutDialog from './account/SignOutDialog';
 import SignUpDialog from './account/SignUpDialog';
 
+
+// Payments
+import CheckoutDialog from './payments/CheckoutDialog';
+
 import { findContextualRoute, PAGE_PATH_QUERY_PARAM } from './routes';
 import { useCallback } from 'react';
 import Router, { useRouter } from 'next/router';
 import { resolveHref } from 'next/dist/shared/lib/router/router';
-import { addQueryParams } from '../utils';
+import { setQueryParams } from '../utils';
 
 const views = [];
 views.push({ key: 'ChangeAccountDialog', Component: ChangeAccountDialog });
@@ -20,6 +24,8 @@ views.push({ key: 'ResetPasswordDialog', Component: ResetPasswordDialog });
 views.push({ key: 'SignInDialog', Component: SignInDialog });
 views.push({ key: 'SignOutDialog', Component: SignOutDialog });
 views.push({ key: 'SignUpDialog', Component: SignUpDialog });
+
+views.push({ key: 'CheckoutDialog', Component: CheckoutDialog });
 
 const findContextualRouteWithComponent = (url) => {
     const contextualRoute = findContextualRoute(url);
@@ -40,12 +46,16 @@ const useContextualRouting = () => {
     const constructLink = useCallback((urlString, hiddenParams) => {
         urlString = require('url').format(urlString);
 
-        if (findContextualRoute(urlString)) {
+        const contextualRoute = findContextualRoute(urlString);
+
+        if (contextualRoute) {
+
+            hiddenParams = { ...hiddenParams, ...contextualRoute.match.params };
 
             const [, pagePath] = resolveHref(Router, router.route, true);
 
-            urlString = addQueryParams(urlString, { [PAGE_PATH_QUERY_PARAM]: pagePath });
-            const hiddenUrlString = addQueryParams(urlString, { ...hiddenParams, [PAGE_PATH_QUERY_PARAM]: pagePath })
+            urlString = setQueryParams(urlString, { [PAGE_PATH_QUERY_PARAM]: pagePath });
+            const hiddenUrlString = setQueryParams(urlString, { ...hiddenParams, [PAGE_PATH_QUERY_PARAM]: pagePath })
 
             return {
                 href: hiddenUrlString,

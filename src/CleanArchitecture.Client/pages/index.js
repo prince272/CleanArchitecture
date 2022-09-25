@@ -2,17 +2,22 @@ import Head from 'next/head';
 import Image from 'next/image';
 import { useContextualRouting } from '../views/routes.views';
 import Link from 'next/link';
-import { useClient } from '../components';
-import { useState } from 'react';
+import { PhoneTextField, useClient } from '../components';
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { findContextualRoute } from '../views/routes';
-import { getPath } from '../utils';
+import { getPath, isPhoneFormat } from '../utils';
 import { FileUploader } from '../components/FileUploader';
+import { MuiTelInput } from 'mui-tel-input';
+import { TextField } from '@mui/material';
+import { getCountryCallingCode } from 'libphonenumber-js';
 
 export default function Home(props) {
 
   const client = useClient();
   const { constructLink } = useContextualRouting();
   const [count, setCount] = useState(0);
+
+  const [value, setValue] = useState(null);
 
   return (
     <div>
@@ -35,10 +40,14 @@ export default function Home(props) {
       <Link {...constructLink('/account/password/reset')}><a>Reset Password</a></Link>
       <br />
       <br />
+      <Link {...constructLink('/payments/29/checkout?accessCode=12345')}><a>Checkout Payment</a></Link>
+      <br />
+      <br />
 
       <main>
         {JSON.stringify(client.user)}
         <FileUploader />
+        {value}
       </main>
     </div>
   )

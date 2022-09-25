@@ -173,18 +173,49 @@ export const preventDefault = (cb) => {
     }
 };
 
+
 // Axios handling errors
 // source: https://stackoverflow.com/questions/49967779/axios-handling-errors
-export const formatError = (error) => {
 
-    let message = null;
+export const getErrorInfo = (error) => {
 
+    let title = null;
+    let detail = null;
+    let info = null;
+    let canRetry = true;
 
     if (error.response) {
 
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        message = error?.response?.data?.title;
+        info = error.response.data;
+
+        canRetry = (info.status >= 500) && (info.status <= 599);
+
+        if (info.stats == 400) {
+            title = 'Invalid Operation'
+            detail = 'The server was unable to handle your request because it was malformed.'
+        }
+        else if (info.status == 401) {
+            title = 'Authentication Required'
+            detail = 'The server was unable to handle your request because you\'re not authenticated.' //`The server cannot process your request because you're not authenticated.`;
+        }
+        else if (info.status == 403) {
+            title = 'Permission Required'
+            detail = 'The server was unable to handle your request due to lack of permissions.' //`The server cannot process your request because you don't have permission.`;
+        }
+        else if (info.status == 404) {
+            title = 'Resource Not Found'
+            detail = `The server was unable to handle your request due to a missing resource.`;
+        }
+        else {
+            title = 'Oops! Something went wrong';
+            detail = `A ${info.stats} error occurred.`;
+        }
+
+        detail += canRetry ? 
+        '\nPlease try again after a while. If the problem persists, contact technical support.' : 
+        '';
     }
     else if (error.request) {
 
@@ -193,19 +224,20 @@ export const formatError = (error) => {
         // http.ClientRequest in node.js
 
         if (error.code === AxiosError.ERR_NETWORK) {
-            message = 'No internet connection.';
+            title = 'No internet connection';
+            detail = 'There is no internet connection. Please check your internet connection and try again.';
         }
         else {
-            message = 'No response from server.';
+            title = 'No response from server';
+            detail = 'An error occurred. Please try again after a while. If the problem persists, contact technical support.';
         }
     }
     else {
-
-        // Something happened in setting up the request that triggered an Error
-        message = 'A client-side error occurred.';
+        title = 'Oops! Something went wrong';
+        detail = 'An unknown error occurred. Please try again after a while. If the problem persists, contact technical support.';
     }
 
-    return message;
+    return { title, detail, canRetry, ...info };
 };
 
 export function isHttpError(payload) {
@@ -281,36 +313,23 @@ export function decompressString(string) {
     return newString;
 };
 
-export const addQueryParams = (uri, params) => {
-    let anchorIndex = uri.indexOf('#');
-    let uriToBeAppended = uri;
-    let anchorText = '';
-
-    // If there is an anchor, then the query string must be inserted before its first occurrence.
-    if (anchorIndex != -1) {
-        anchorText = uri.substring(anchorIndex);
-        uriToBeAppended = uri.substring(0, anchorIndex);
-    }
-
-    let queryIndex = uriToBeAppended.indexOf('?');
-    let hasQuery = queryIndex != -1;
-
-    let sb = [];
-    sb.push(uriToBeAppended);
-
-    Object.entries(params).forEach(([key, value], index) => {
-        if (value != null) {
-            sb.push(hasQuery ? '&' : '?');
-            sb.push(encodeURIComponent(key));
-            sb.push('=');
-            sb.push(encodeURIComponent(value));
-            hasQuery = true;
+export const setQueryParams = (url, queryParams) => {
+    // source: 
+    const combineQueryString = (a, b, overwrite = false) => {
+        a = new URLSearchParams(a);
+        const fn = overwrite ? a.set : a.append;
+        for (let [key, value] of new URLSearchParams(b)) {
+            fn.call(a, key, value);
         }
-    });
+        return a.toString();
+    };
 
-    sb.push(anchorText);
-    const result = sb.join('');
-    return result;
+    let path = url.split("?")[0];
+    let queryString = url.split("?")[1];
+
+    queryString = combineQueryString(queryParams, queryString, true);
+    url = path + (queryString ? `?${queryString}` : '');
+    return url;
 };
 
 // Remove an empty query string from url

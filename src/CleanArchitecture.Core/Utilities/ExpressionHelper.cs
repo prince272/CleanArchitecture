@@ -9,7 +9,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace CleanArchitecture.Core.Helpers;
+namespace CleanArchitecture.Core.Utilities;
 
 public static class ExpressionHelper
 {

@@ -8,16 +8,20 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 {
     public class PaymentProperties
     {
-        public const string PaymentId = nameof(PaymentId);
+        public const string Id = nameof(Id);
 
-        public const string PaymentMethod = nameof(PaymentMethod);
+        public const string Method = nameof(Method);
 
         public const string Description = nameof(Description);
 
-        public const string Email = nameof(Email);
+        public const string EmailAddress = nameof(EmailAddress);
 
-        public const string PhoneNumber = nameof(PhoneNumber);
-        
+        public const string MobileNumber = nameof(MobileNumber);
+
+        public static string MobileIssuer = nameof(MobileIssuer);
+
         public const string Amount = nameof(Amount);
+
+        public const string Type = nameof(Type);
     }
 }

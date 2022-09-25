@@ -12,17 +12,15 @@ namespace CleanArchitecture.Core.Entities
 
         public string Description { get; set; } = null!;
 
-        public string? Email { get; set; }
-
-        public string? PhoneNumber { get; set; }
-
         public decimal Amount { get; set; }
+
+        public PaymentType Type { get; set; }
 
         public PaymentStatus Status { get; set; }
 
-        public string Reference { get; set; } = null!;
+        public string AccessCode { get; set; } = null!;
 
-        public string? Method { get; set; }
+        public string ReferenceCode { get; set; } = null!;
     } 
 
     public enum PaymentStatus
@@ -33,5 +31,11 @@ namespace CleanArchitecture.Core.Entities
         Cancelled,
         Declined,
         Expired
+    }
+
+    public enum PaymentType
+    {
+        Debit,
+        Credit
     }
 }

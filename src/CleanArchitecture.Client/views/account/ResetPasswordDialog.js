@@ -1,12 +1,12 @@
 import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, Link as MuiLink, Dialog, TextField } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { DialogCloseButton, PasswordField, PhoneField, useClient } from '../../components';
+import { DialogCloseButton, PasswordField, PhoneTextField, useClient } from '../../components';
 import * as Icons from '@mui/icons-material';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useTimer } from 'use-timer';
 import { Controller, useForm } from 'react-hook-form';
-import { preventDefault, formatError, isPhoneFormat, isHttpError } from '../../utils';
+import { preventDefault, getErrorInfo, isPhoneFormat, isHttpError } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { useContextualRouting } from '../routes.views';
@@ -35,7 +35,7 @@ const ResetPasswordDialog = (props) => {
     const onSubmit = async (inputs, resend = false) => {
         try {
             if (!sent || resend) {
-                setFetcher(fetcher => ({ ...fetcher, state: 'sending' }));
+                setFetcher({ state: 'sending' });
                 sendingTimer.start();
 
                 let response = await client.post('/account/password/reset/send', inputs);
@@ -46,7 +46,7 @@ const ResetPasswordDialog = (props) => {
             }
             else {
                 if (!verified) {
-                    setFetcher(fetcher => ({ ...fetcher, state: 'verifying' }));
+                    setFetcher({ state: 'verifying' });
 
                     let response = await client.post('/account/password/reset/verify', inputs);
                     form.clearErrors();
@@ -54,7 +54,7 @@ const ResetPasswordDialog = (props) => {
                     setVerified(true);
                 }
                 else {
-                    setFetcher(fetcher => ({ ...fetcher, state: 'verifying' }));
+                    setFetcher({ state: 'verifying' });
 
                     let response = await client.post('/account/password/reset', inputs);
                     form.clearErrors();
@@ -76,10 +76,10 @@ const ResetPasswordDialog = (props) => {
                 })();
             }
 
-            enqueueSnackbar(formatError(error), { variant: 'error' });
+            enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
         }
         finally {
-            setFetcher(fetcher => ({ ...fetcher, state: 'idle' }));
+            setFetcher({ state: 'idle' });
         }
     };
 
@@ -104,7 +104,7 @@ const ResetPasswordDialog = (props) => {
                 <Typography variant="body2" gutterBottom>
                     {!sent ? `We\'ll send a security code to this ${casing.noCase(accountType)}`
                         : !verified ? `We\'ve sent a security code to this ${casing.noCase(accountType)}`
-                        : `Enter your new password`}
+                            : `Enter your new password`}
                 </Typography>
                 <DialogCloseButton onClose={onClose} />
             </DialogTitle>
@@ -117,7 +117,7 @@ const ResetPasswordDialog = (props) => {
                             <Controller
                                 name="username"
                                 control={form.control}
-                                render={({ field }) => <PhoneField {...field}
+                                render={({ field }) => <PhoneTextField {...field}
                                     label="Email or Phone number"
                                     variant="standard"
                                     error={!!formState.errors.username}
@@ -167,13 +167,14 @@ const ResetPasswordDialog = (props) => {
                                 }
                             </>
                         }
+                        <Grid item xs={12}>
+                            <Box mb={3}>
+                                <LoadingButton startIcon={<></>} loading={!sent && fetcher.state == 'sending' || fetcher.state == 'verifying'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
+                                    {!sent ? 'Send code' : !verified ? 'Verify code' : `Change password`}
+                                </LoadingButton>
+                            </Box>
+                        </Grid>
                     </Grid>
-
-                    <Box mb={3}>
-                        <LoadingButton startIcon={<></>} loading={!sent && fetcher.state == 'sending' || fetcher.state == 'verifying'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
-                            {!sent ? 'Send code' : !verified ? 'Verify code' : `Change password`}
-                        </LoadingButton>
-                    </Box>
                 </Box>
 
                 {sent && !verified &&

@@ -2,7 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Core.Helpers
+namespace CleanArchitecture.Core.Utilities
 {
     public static class StreamExtensions
     {

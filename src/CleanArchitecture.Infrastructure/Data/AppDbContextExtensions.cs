@@ -1,5 +1,5 @@
 ﻿using CleanArchitecture.Core;
-using CleanArchitecture.Core.Helpers;
+using CleanArchitecture.Core.Utilities;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using System;

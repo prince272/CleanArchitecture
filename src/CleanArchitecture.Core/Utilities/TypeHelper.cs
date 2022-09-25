@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Core.Helpers
+namespace CleanArchitecture.Core.Utilities
 {
     public static class TypeHelper
     {
@@ -89,7 +89,7 @@ namespace CleanArchitecture.Core.Helpers
         }
 
 
-        static readonly ConcurrentDictionary<Type, bool> IsSimpleTypeCache = new ConcurrentDictionary<System.Type, bool>();
+        static readonly ConcurrentDictionary<Type, bool> IsSimpleTypeCache = new ConcurrentDictionary<Type, bool>();
 
         // How To Test if Type is Primitive
         // source: https://stackoverflow.com/questions/2442534/how-to-test-if-type-is-primitive

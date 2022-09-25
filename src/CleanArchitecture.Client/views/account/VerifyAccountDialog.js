@@ -1,12 +1,12 @@
 import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, Link as MuiLink, Dialog, TextField } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { DialogCloseButton, PhoneField, useClient } from '../../components';
+import { DialogCloseButton, PhoneTextField, useClient } from '../../components';
 import * as Icons from '@mui/icons-material';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useTimer } from 'use-timer';
 import { Controller, useForm } from 'react-hook-form';
-import { preventDefault, formatError, isPhoneFormat, isHttpError } from '../../utils';
+import { preventDefault, getErrorInfo, isPhoneFormat, isHttpError } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { useContextualRouting } from '../routes.views';
@@ -24,8 +24,7 @@ const VerifyAccountDialog = (props) => {
 
     const returnUrl = router.query.returnUrl || '/';
     const [initialInputs,] = useState(JSON.parse(router.query.inputs || null));
-    if (!initialInputs) throw new Error('\'state\' query value was not supplied');
-    
+
     const accountType = isPhoneFormat(form.watch('username')) ? 'PhoneNumber' : 'EmailAddress';
     const messageType = isPhoneFormat(form.watch('username')) ? 'SMS' : 'Email';
 
@@ -36,7 +35,7 @@ const VerifyAccountDialog = (props) => {
     const onSubmit = async (inputs, resend = false) => {
         try {
             if (!sent || resend) {
-                setFetcher(fetcher => ({ ...fetcher, state: 'sending' }));
+                setFetcher({ state: 'sending' });
                 sendingTimer.start();
 
                 let response = await client.post('/account/verify/send', inputs);
@@ -46,7 +45,7 @@ const VerifyAccountDialog = (props) => {
                 enqueueSnackbar(`Security code sent!`, { variant: 'success' });
             }
             else {
-                setFetcher(fetcher => ({ ...fetcher, state: 'verifying' }));
+                setFetcher({ state: 'verifying' });
 
                 let response = await client.post('/account/verify', inputs);
                 form.clearErrors();
@@ -67,14 +66,21 @@ const VerifyAccountDialog = (props) => {
                 })();
             }
 
-            enqueueSnackbar(formatError(error), { variant: 'error' });
+            enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
         }
         finally {
-            setFetcher(fetcher => ({ ...fetcher, state: 'idle' }));
+            setFetcher({state: 'idle' });
         }
     };
 
     const onLoad = () => {
+
+        if (!initialInputs) {
+            const link = constructLink(returnUrl);
+            router.replace(link.href, link.as);
+            return;
+        }
+
         form.reset({
             username: initialInputs.username
         });
@@ -105,7 +111,7 @@ const VerifyAccountDialog = (props) => {
                             <Controller
                                 name="username"
                                 control={form.control}
-                                render={({ field }) => <PhoneField {...field}
+                                render={({ field }) => <PhoneTextField {...field}
                                     label="Email or Phone number"
                                     variant="standard"
                                     error={!!formState.errors.username}
@@ -135,13 +141,14 @@ const VerifyAccountDialog = (props) => {
                                 />
                             </Grid>
                         }
+                        <Grid item xs={12}>
+                            <Box mb={3}>
+                                <LoadingButton startIcon={<></>} loading={!sent && fetcher.state == 'sending' || fetcher.state == 'verifying'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
+                                    {!sent ? 'Send code' : `Verify ${casing.noCase(accountType)}`}
+                                </LoadingButton>
+                            </Box>
+                        </Grid>
                     </Grid>
-
-                    <Box mb={3}>
-                        <LoadingButton startIcon={<></>} loading={!sent && fetcher.state == 'sending' || fetcher.state == 'verifying'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
-                            {!sent ? 'Send code' : `Verify ${casing.noCase(accountType)}`}
-                        </LoadingButton>
-                    </Box>
                 </Box>
 
                 {sent &&

@@ -2,18 +2,20 @@ import '../assets/styles/globals.css';
 import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
-import { findContextualRouteWithComponent } from '../views/routes.views';
+import { findContextualRouteWithComponent, useContextualRouting } from '../views/routes.views';
 import App from 'next/app';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ClientProvider, ViewProvider, useView } from '../components';
 import { createClient } from '../client';
 import PageProgressBar from 'react-top-loading-bar';
+import { removeEmptyQueryParams } from '../utils';
 
 const PageRoute = ({ Component, pageProps, ...appProps }) => {
   const router = useRouter();
   const view = useView();
   const theme = useTheme();
+  const { constructLink } = useContextualRouting();
 
   const pageProgressBar = useRef(null);
 
@@ -44,7 +46,8 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
       }
     };
 
-    handleRouteChangeComplete(router.asPath, {});
+    const link = constructLink(router.asPath);
+    router.replace(link.href, link.as);
 
     router.events.on('routeChangeStart', handleRouteChangeStart);
     router.events.on('routeChangeComplete', handleRouteChangeComplete);
@@ -68,7 +71,7 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
   },
 });
 

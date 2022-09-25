@@ -5,17 +5,17 @@ namespace CleanArchitecture.Server
 {
     public class AppSettings
     {
-        public MailingOptions Mailing { get; set; } = null!;
+        public MailSettings MailSettings { get; set; } = null!;
 
-        public MediaOptions Media { get; set; } = null!;
+        public MediaSettings MediaSettings { get; set; } = null!;
     }
 
-    public class MailingOptions
+    public class MailSettings
     {
         public IDictionary<string, EmailAccount> Accounts { get; set; } = new Dictionary<string, EmailAccount>();
     }
 
-    public class MediaOptions
+    public class MediaSettings
     {
         public IDictionary<MediaType, MediaRule> Rules { get; set; } = new Dictionary<MediaType, MediaRule>();
 

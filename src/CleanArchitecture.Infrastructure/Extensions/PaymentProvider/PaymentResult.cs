@@ -18,7 +18,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 
         public bool Success { get; protected set; }
 
-        public string Message { get; protected set; } = null!;
+        public string? Message { get; protected set; }
 
         public IDictionary<string, string[]>? Errors { get; protected set; }
 
@@ -30,7 +30,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
             {
                 Success = false,
                 Errors = errors ?? new Dictionary<string, string[]>(),
-                Message = message ?? string.Empty
+                Message = message
             };
         }
 
@@ -40,7 +40,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
             {
                 Success = false,
                 Data = data ?? new Dictionary<string, object>(),
-                Message = message ?? string.Empty
+                Message = message
             };
         }
 
@@ -56,7 +56,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
         {
             return Success ?
                    "Succeeded" :
-                   string.Format(CultureInfo.InvariantCulture, "{0} : {1}", "Failed", string.Join(",", Errors.Keys.ToList()));
+                   string.Format(CultureInfo.InvariantCulture, "{0} : {1}", "Failed", string.Join(",", Errors!.Keys.ToList()));
         }
     }
 }

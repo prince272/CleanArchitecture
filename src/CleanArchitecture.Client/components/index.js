@@ -25,7 +25,7 @@ DialogCloseButton.propTypes = {
 };
 
 export { default as PasswordField } from './PasswordField';
-export { default as PhoneField } from './PhoneField';
+export { default as PhoneTextField } from './PhoneTextField';
 
 export { default as ViewContext } from './ViewContext';
 export * from './ViewContext';

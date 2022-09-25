@@ -1,79 +1,82 @@
-﻿using System;
+﻿using PhoneNumbers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Core.Helpers
+namespace CleanArchitecture.Core.Utilities
 {
     public static class ContactHelper
     {
-        public static ContactType Switch(string rawValue)
+        public static ContactType GetContactType(string value)
         {
-            if (string.IsNullOrWhiteSpace(rawValue))
-                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(rawValue));
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(value));
 
-            return Regex.IsMatch(rawValue.ToLowerInvariant(), "^[-+0-9() ]+$") ? ContactType.PhoneNumber : ContactType.EmailAddress;
+            return Regex.IsMatch(value.ToLowerInvariant(), "^[-+0-9() ]+$") ? ContactType.PhoneNumber : ContactType.EmailAddress;
         }
 
-        public static PhoneNumbers.PhoneNumber ValidatePhoneNumber(string rawValue)
+        public static (string Number, PhoneNumber Details) ParsePhoneNumber(string value)
         {
-            if (string.IsNullOrWhiteSpace(rawValue))
-                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(rawValue));
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(value));
 
-            var phoneNumberUtil = PhoneNumbers.PhoneNumberUtil.GetInstance();
-            var phoneNumberValue = phoneNumberUtil.ParseAndKeepRawInput(rawValue, null);
+            var phoneNumberHelper = PhoneNumberUtil.GetInstance();
+            var phoneNumberDetails = phoneNumberHelper.ParseAndKeepRawInput(value, null);
 
-            if (phoneNumberUtil.IsValidNumber(phoneNumberValue))
-                return phoneNumberValue;
+            if (phoneNumberHelper.IsValidNumber(phoneNumberDetails) && phoneNumberDetails.RawInput == value)
+            {
+                return ($"+{phoneNumberDetails.CountryCode}{phoneNumberDetails.NationalNumber}", phoneNumberDetails);
+            }
 
-            throw new FormatException($"Input '{rawValue}' was not recognized as a valid PhoneNumber.");
+            throw new FormatException($"Input '{value}' was not recognized as a valid PhoneNumber.");
         }
 
-        public static bool TryValidatePhoneNumber(string rawValue, out PhoneNumbers.PhoneNumber phoneNumber)
+        public static bool TryParsePhoneNumber(string value, out (string Number, PhoneNumber Details) phoneDetails)
         {
             try
             {
-                phoneNumber = ValidatePhoneNumber(rawValue);
+                phoneDetails = ParsePhoneNumber(value);
                 return true;
             }
             catch (Exception)
             {
-                phoneNumber = null!;
+                phoneDetails = (null!, null!);
                 return false;
             }
         }
 
         // C# code to validate email address
         // source: https://stackoverflow.com/questions/1365407/c-sharp-code-to-validate-email-address
-        public static System.Net.Mail.MailAddress ValidateEmailAddress(string rawValue)
+        public static (string Address, System.Net.Mail.MailAddress Details) ParseEmailAddress(string value)
         {
-            if (string.IsNullOrWhiteSpace(rawValue))
-                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(rawValue));
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException($"Value cannot be null or whitespace.", nameof(value));
 
-            if (!rawValue.EndsWith("."))
+            if (!value.EndsWith("."))
             {
-                var emailAddress = new System.Net.Mail.MailAddress(rawValue);
-                if (emailAddress.Address == rawValue)
+                var emailAddressDetails = new System.Net.Mail.MailAddress(value);
+                if (emailAddressDetails.Address == value)
                 {
-                    return emailAddress;
+                    return ($"{emailAddressDetails.User}@{emailAddressDetails.Host}".ToLowerInvariant(), emailAddressDetails);
                 }
             }
 
-            throw new FormatException($"Input '{rawValue}' was not recognized as a valid MailAddress.");
+            throw new FormatException($"Input '{value}' was not recognized as a valid MailAddress.");
         }
 
-        public static bool TryValidateEmailAddress(string rawValue, out System.Net.Mail.MailAddress emailAddress)
+        public static bool TryParseEmailAddress(string value, out (string Address, System.Net.Mail.MailAddress Details) emailDetails)
         {
             try
             {
-                emailAddress = ValidateEmailAddress(rawValue);
+                emailDetails = ParseEmailAddress(value);
                 return true;
             }
             catch (Exception)
             {
-                emailAddress = null!;
+                emailDetails = (null!, null!);
                 return false;
             }
         }

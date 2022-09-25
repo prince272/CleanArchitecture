@@ -1,11 +1,11 @@
 import { DialogTitle, DialogContent, Grid, Stack, Box, Button, Typography, TextField, Link as MuiLink, Dialog } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { DialogCloseButton, PasswordField, PhoneField, useClient } from '../../components/';
+import { DialogCloseButton, PasswordField, PhoneTextField, useClient } from '../../components/';
 import * as Icons from '@mui/icons-material';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { preventDefault, formatError, isHttpError, getPath } from '../../utils';
+import { preventDefault, getErrorInfo, isHttpError, getPath } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { useContextualRouting } from '../routes.views';
@@ -27,11 +27,11 @@ const SignInDialog = (props) => {
     const [fetcher, setFetcher] = useState({ state: 'idle' });
     const { enqueueSnackbar } = useSnackbar();
 
-    const onSubmit = async (inputs, provider) => {
+    const onSubmit = async ({ provider, ...inputs }) => {
         setProvider(provider);
 
         try {
-            setFetcher(fetcher => ({ ...fetcher, state: 'submitting' }));
+            setFetcher({ state: 'submitting' });
 
             await client.signin({ ...inputs, provider, returnUrl: new URL(getPath(returnUrl), CLIENT_URL).toString() });
             form.clearErrors();
@@ -61,15 +61,15 @@ const SignInDialog = (props) => {
                         Object.entries(inputErrors).forEach(([name, message]) => form.setError(name, { type: 'server', message: message?.join('\n') }));
                     })();
 
-                    enqueueSnackbar(formatError(error), { variant: 'error' });
+                    enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
                 }
             }
             else {
-                enqueueSnackbar(formatError(error), { variant: 'error' });
+                enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
             }
         }
         finally {
-            setFetcher(fetcher => ({ ...fetcher, state: 'idle' }));
+            setFetcher({ state: 'idle' });
         }
     };
 
@@ -82,7 +82,7 @@ const SignInDialog = (props) => {
                 password: initialInputs.password
             });
 
-            onSubmit(form.watch(), provider);
+            onSubmit({ ...form.watch(), provider });
         }
         else {
             form.reset({
@@ -112,13 +112,13 @@ const SignInDialog = (props) => {
 
             <DialogContent sx={{ px: 4, pb: 0 }}>
                 {provider == 'credential' ?
-                    <Box component={"form"} onSubmit={preventDefault(() => onSubmit(form.watch(), 'credential'))}>
+                    <Box component={"form"} onSubmit={preventDefault(() => onSubmit({ ...form.watch(), provider: 'credential' }))}>
                         <Grid container pt={1} pb={4} spacing={3}>
                             <Grid item xs={12}>
                                 <Controller
                                     name="username"
                                     control={form.control}
-                                    render={({ field }) => <PhoneField {...field}
+                                    render={({ field }) => <PhoneTextField {...field}
                                         label="Email or Phone number"
                                         variant="standard"
                                         error={!!formState.errors.username}
@@ -142,12 +142,14 @@ const SignInDialog = (props) => {
                             <Grid item xs={12}>
                                 <Box mt={-1}><Typography variant="body2" textAlign="right"><Link {...constructLink({ pathname: '/account/password/reset', query: { returnUrl } })} passHref><MuiLink underline="hover">Forgot password?</MuiLink></Link></Typography></Box>
                             </Grid>
+                            <Grid item xs={12}>
+                                <Box mb={3}>
+                                    <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting' && provider == 'credential'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
+                                        Sign In
+                                    </LoadingButton>
+                                </Box>
+                            </Grid>
                         </Grid>
-                        <Box mb={3}>
-                            <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting' && provider == 'credential'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
-                                Sign In
-                            </LoadingButton>
-                        </Box>
                     </Box> :
                     <>
                         <Stack pt={1} pb={3} spacing={2}>
@@ -157,7 +159,7 @@ const SignInDialog = (props) => {
                             }} disabled={fetcher.state == 'submitting'} variant="outlined" size="large" startIcon={<Icons.AccountCircle />}>Use Email or Phone</Button>
 
                             <LoadingButton onClick={() => {
-                                onSubmit(form.watch(), 'google');
+                                onSubmit({ ...form.watch(), provider: 'google' });
                             }}
                                 startIcon={<Icons.Google />}
                                 loading={fetcher.state == 'submitting' && provider == 'google'}

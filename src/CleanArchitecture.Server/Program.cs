@@ -37,9 +37,9 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 });
 
 // Add database services.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var defaltConnectionString = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
+    options.UseSqlServer(defaltConnectionString, sqlOptions =>
     {
 
     }));
@@ -98,11 +98,11 @@ builder.Services.AddAuthentication(options =>
         options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidIssuer = builder.Configuration.GetValue<string>("Authentication:Default:Issuer"), // site that makes the token.
+            ValidIssuer = builder.Configuration.GetValue<string>("AuthenticationProviders:Default:Issuer"), // site that makes the token.
             ValidateIssuer = true,
-            ValidAudience = builder.Configuration.GetValue<string>("Authentication:Default:Audience"), // site that consumes the token.
+            ValidAudience = builder.Configuration.GetValue<string>("AuthenticationProviders:Default:Audience"), // site that consumes the token.
             ValidateAudience = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("Authentication:Default:Secret"))),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("AuthenticationProviders:Default:Secret"))),
             ValidateIssuerSigningKey = true, // verify signature to avoid tampering.
             ValidateLifetime = true, // validate the expiration.
             ClockSkew = TimeSpan.Zero // tolerance for the expiration date.
@@ -135,9 +135,9 @@ builder.Services.AddAuthentication(options =>
     })
     .AddBearerTokenProvider(options =>
     {
-        options.Issuer = builder.Configuration.GetValue<string>("Authentication:Default:Issuer");
-        options.Audience = builder.Configuration.GetValue<string>("Authentication:Default:Audience");
-        options.Secret = builder.Configuration.GetValue<string>("Authentication:Default:Secret");
+        options.Issuer = builder.Configuration.GetValue<string>("AuthenticationProviders:Default:Issuer");
+        options.Audience = builder.Configuration.GetValue<string>("AuthenticationProviders:Default:Audience");
+        options.Secret = builder.Configuration.GetValue<string>("AuthenticationProviders:Default:Secret");
 
         // source: https://cloud.google.com/apigee/docs/api-platform/antipatterns/oauth-long-expiration
         options.AccessTokenExpiresIn = TimeSpan.FromMinutes(30);
@@ -149,8 +149,8 @@ builder.Services.AddAuthentication(options =>
     .AddGoogle("google", options =>
     {
         options.SignInScheme = IdentityConstants.ExternalScheme;
-        options.ClientId = builder.Configuration.GetValue<string>("Authentication:Google:ClientId");
-        options.ClientSecret = builder.Configuration.GetValue<string>("Authentication:Google:ClientSecret");
+        options.ClientId = builder.Configuration.GetValue<string>("AuthenticationProviders:Google:ClientId");
+        options.ClientSecret = builder.Configuration.GetValue<string>("AuthenticationProviders:Google:ClientSecret");
         options.AccessDeniedPath = "/account/access-denied";
     });
 
@@ -189,10 +189,10 @@ builder.Services.AddAntiforgery(options => options.HeaderName = BearerTokenProvi
 
 builder.Services.AddMailKitEmailSender(options =>
 {
-    options.Port = builder.Configuration.GetValue<int>("Mailing:Port");
-    options.Hostname = builder.Configuration.GetValue<string>("Mailing:Hostname");
-    options.UseServerCertificateValidation = builder.Configuration.GetValue<bool>("Mailing:UseServerCertificateValidation");
-    options.SecureSocketId = builder.Configuration.GetValue<int>("Mailing:SecureSocketId");
+    options.Port = builder.Configuration.GetValue<int>("MailSettings:Port");
+    options.Hostname = builder.Configuration.GetValue<string>("MailSettings:Hostname");
+    options.UseServerCertificateValidation = builder.Configuration.GetValue<bool>("MailSettings:UseServerCertificateValidation");
+    options.SecureSocketId = builder.Configuration.GetValue<int>("MailSettings:SecureSocketId");
 });
 
 builder.Services.AddSmsSender(options => { });
@@ -206,7 +206,13 @@ builder.Services.AddLocalFileStorage(options =>
     options.RootPath = builder.Environment.WebRootPath;
 });
 
-builder.Services.AddPaySwitchProvider(Options => { });
+builder.Services.AddPaySwitchProvider(options => {
+    options.ClientId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientId");
+    options.ClientSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientSecret");
+
+    options.MerchantId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantId");
+    options.MerchantSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantSecret");
+});
 
 builder.Services.AddResponseCompression();
 
@@ -299,8 +305,8 @@ builder.Services.AddRazorViewRenderer((options) => {
 
 var app = builder.Build();
 
-app.UseExceptionHandler("/error/500");
 app.UseStatusCodePagesWithReExecute("/error/{0}");
+app.UseExceptionHandler("/error/500");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

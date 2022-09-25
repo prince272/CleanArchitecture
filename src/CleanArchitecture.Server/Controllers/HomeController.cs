@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CleanArchitecture.Core.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -10,12 +12,6 @@ namespace CleanArchitecture.Server.Controllers
 {
     public class HomeController : ApiController
     {
-        [HttpGet]
-        public IActionResult Index()
-        {
-            return NoContent();
-        }
-
         [Authorize]
         [HttpGet("protected")]
         public IActionResult Protected()
@@ -25,6 +21,7 @@ namespace CleanArchitecture.Server.Controllers
 
         [AllowAnonymous]
         [ApiExplorerSettings(IgnoreApi = true)]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         [Route("error/{statusCode}")]
         public IActionResult Error(int statusCode)
         {
@@ -34,7 +31,6 @@ namespace CleanArchitecture.Server.Controllers
         }
     }
 
-    [ApiController]
     [Route("")]
     public abstract class ApiController : ControllerBase
     {

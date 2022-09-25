@@ -10,6 +10,9 @@ routes.push({ key: 'SignInDialog', pattern: '/account/signin' });
 routes.push({ key: 'SignOutDialog', pattern: '/account/signout' });
 routes.push({ key: 'SignUpDialog', pattern: '/account/signup' });
 
+// Payments
+routes.push({ key: 'CheckoutDialog', pattern: '/payments/:paymentId/checkout' });
+
 const findContextualRoute = (url) => {
     const contextualRoute = routes.map(route => {
         const match = matchPath(route.pattern, new URL(getPath(url), CLIENT_URL).pathname);

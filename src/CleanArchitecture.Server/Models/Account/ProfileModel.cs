@@ -22,6 +22,8 @@ namespace CleanArchitecture.Server.Models.Account
 
         public bool PhoneNumberConfirmed { get; set; }
 
+        public DateTimeOffset RegisteredOn { get; set; }
+
         public IDictionary<string, string> Roles = new Dictionary<string, string>();
     }
 

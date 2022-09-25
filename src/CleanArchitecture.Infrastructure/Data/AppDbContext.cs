@@ -1,6 +1,6 @@
 ﻿using CleanArchitecture.Core;
 using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Helpers;
+using CleanArchitecture.Core.Utilities;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;

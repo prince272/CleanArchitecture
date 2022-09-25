@@ -1,6 +1,9 @@
-﻿using CleanArchitecture.Core.Helpers;
+﻿using CleanArchitecture.Core;
+using CleanArchitecture.Core.Entities;
+using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Infrastructure.Extensions.PaymentProvider;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -10,21 +13,43 @@ namespace CleanArchitecture.Server.Controllers
     public class PaymentsController : ApiController
     {
         private readonly IPaymentProvider _paymentProvider;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly UserManager<User> _userManager;
 
-        public PaymentsController(IPaymentProvider paymentProvider)
+        public PaymentsController(IPaymentProvider paymentProvider, IUnitOfWork unitOfWork, UserManager<User> userManager)
         {
             _paymentProvider = paymentProvider ?? throw new ArgumentNullException(nameof(paymentProvider));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         }
 
-        [HttpPost("payments/process")]
-        public async Task<IActionResult> Process([FromBody] IDictionary<string, object> form)
+        [HttpPost("payments/{paymentId}/checkout")]
+        public async Task<IActionResult> Checkout(long paymentId, string accessCode, [FromBody] IDictionary<string, object> form)
         {
-            var result = await _paymentProvider.ProcessAsync(form);
+            var payment = await _unitOfWork.FindAsync<Payment>(paymentId);
+            if (payment == null || payment.AccessCode != accessCode)
+            {
+                return NotFound();
+            }
+
+            var result = await _paymentProvider.ProcessAsync(payment, form);
 
             if (!result.Success)
                 return ValidationProblem(result.Errors!, title: result.Message);
 
             return Ok(result.Data);
+        }
+
+        [HttpGet("payments/{paymentId}")]
+        public async Task<IActionResult> Details(long paymentId, string accessCode)
+        {
+            var payment = await _unitOfWork.FindAsync<Payment>(paymentId);
+            if (payment == null || payment.AccessCode != accessCode)
+            {
+                return NotFound();
+            }
+
+            return Ok(payment);
         }
     }
 }

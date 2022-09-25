@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CleanArchitecture.Core.Helpers
+namespace CleanArchitecture.Core.Utilities
 {
     /// <summary>
     /// Class MimeTypeMap.

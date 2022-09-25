@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace CleanArchitecture.Core.Helpers
+namespace CleanArchitecture.Core.Utilities
 {
     public static class Algorithm
     {
@@ -85,7 +85,7 @@ namespace CleanArchitecture.Core.Helpers
         {
             // Use input string to calculate MD5 hash
             using MD5 md5 = MD5.Create();
-            byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+            byte[] inputBytes = Encoding.ASCII.GetBytes(input);
             byte[] hashBytes = md5.ComputeHash(inputBytes);
 
             // Convert the byte array to hexadecimal string
@@ -137,7 +137,7 @@ namespace CleanArchitecture.Core.Helpers
         // This constant determines the number of iterations for the password bytes generation function.
         private const int DerivationIterations = 1000;
 
-        public static string EncryptString(string plainText, string passPhrase)
+        public static string EncryptText(string plainText, string passPhrase)
         {
             // Salt and IV is randomly generated each time, but is preprended to encrypted cipher text
             // so that the same Salt and IV values can be used when decrypting.  
@@ -174,7 +174,7 @@ namespace CleanArchitecture.Core.Helpers
             }
         }
 
-        public static string DecryptString(string cipherText, string passPhrase)
+        public static string DecryptText(string cipherText, string passPhrase)
         {
             // Get the complete stream of bytes that represent:
             // [32 bytes of Salt] + [16 bytes of IV] + [n bytes of CipherText]
@@ -211,6 +211,34 @@ namespace CleanArchitecture.Core.Helpers
                     }
                 }
             }
+        }
+
+
+        public const string NATURAL_NUMERIC_CHARS = "123456789";
+        public const string WHOLE_NUMERIC_CHARS = "0123456789";
+        public const string LOWER_ALPHA_CHARS = "abcdefghijklmnopqrstuvwyxz";
+        public const string UPPER_ALPHA_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        // How can I generate random alphanumeric strings?
+        // source: https://stackoverflow.com/questions/1344221/how-can-i-generate-random-alphanumeric-strings
+        public static string GenerateText(int size, string characters)
+        {
+            var charArray = characters.ToCharArray();
+            byte[] data = new byte[4 * size];
+            using (var crypto = RandomNumberGenerator.Create())
+            {
+                crypto.GetBytes(data);
+            }
+            StringBuilder result = new StringBuilder(size);
+            for (int i = 0; i < size; i++)
+            {
+                var rnd = BitConverter.ToUInt32(data, i * 4);
+                var idx = rnd % charArray.Length;
+
+                result.Append(charArray[idx]);
+            }
+
+            return result.ToString();
         }
     }
 }

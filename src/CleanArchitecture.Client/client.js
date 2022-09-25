@@ -2,7 +2,7 @@ import QueryString from 'qs';
 import Axios from 'axios';
 import * as https from 'https';
 import { axiosAuth } from './utils/axios';
-import { addQueryParams, generateId } from './utils';
+import { setQueryParams, generateId } from './utils';
 import { BrowserWindow } from './utils/browser';
 
 export const SERVER_URL = typeof window !== 'undefined' ? window.env.SERVER_URL : process.env.SERVER_URL;
@@ -44,7 +44,7 @@ const createClient = (settings) => {
             }
             else {
                 const browserId = generateId();
-                try { await new BrowserWindow(browserId, addQueryParams(`${SERVER_URL}/account/${provider}/connect`, { returnUrl: addQueryParams(returnUrl, { browserId }) })).wait(); }
+                try { await new BrowserWindow(browserId, setQueryParams(`${SERVER_URL}/account/${provider}/connect`, { returnUrl: setQueryParams(returnUrl, { browserId }) })).wait(); }
                 catch (ex) { }
                 return await request.post(`/account/${provider}/token/generate`, data, requestConfig);
             }
