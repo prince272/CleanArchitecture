@@ -23,10 +23,9 @@ namespace CleanArchitecture.Server
         {
             public MediaRule()
             {
-
             }
 
-            public string[] FileTypes { get; set; } = null!;
+            public string[] FileExtensions { get; set; } = null!;
 
             public long FileSize { get; set; }
 

@@ -23,11 +23,11 @@ namespace CleanArchitecture.Server.Controllers
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         }
 
-        [HttpPost("payments/{paymentId}/checkout")]
-        public async Task<IActionResult> Checkout(long paymentId, string accessCode, [FromBody] IDictionary<string, object> form)
+        [HttpPost("payments/{paymentId}/checkout/{transactionId}")]
+        public async Task<IActionResult> Checkout(long paymentId, string transactionId, [FromBody] IDictionary<string, object> form)
         {
             var payment = await _unitOfWork.FindAsync<Payment>(paymentId);
-            if (payment == null || payment.AccessCode != accessCode)
+            if (payment == null || payment.TransactionId != transactionId)
             {
                 return NotFound();
             }
@@ -40,11 +40,11 @@ namespace CleanArchitecture.Server.Controllers
             return Ok(result.Data);
         }
 
-        [HttpGet("payments/{paymentId}")]
-        public async Task<IActionResult> Details(long paymentId, string accessCode)
+        [HttpGet("payments/{paymentId}/checkout/{transactionId}")]
+        public async Task<IActionResult> Checkout(long paymentId, string transactionId)
         {
             var payment = await _unitOfWork.FindAsync<Payment>(paymentId);
-            if (payment == null || payment.AccessCode != accessCode)
+            if (payment == null || payment.TransactionId != transactionId)
             {
                 return NotFound();
             }

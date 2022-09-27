@@ -35,13 +35,13 @@ export const FileUploader = (props) => {
             allowAudioPreview={true}
             maxFiles={3}
             name="files"
-            labelIdle='Drag & Drop your files or <span class="filepond--label-action">Browse</span>'
+            labelIdle='Drag &amp; Drop your files or <span class="filepond--label-action">Browse</span>'
             chunkUploads={true}
             chunkForce={true}
             server={{
                 url: SERVER_URL,
                 process: {
-                    url: '/account/media',
+                    url: '/media',
                     method: 'POST',
                     headers: (file) => {
                         const headers = {

@@ -25,6 +25,8 @@ using CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor;
 using CleanArchitecture.Infrastructure.Extensions.SmsSender.Twilio;
 using CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch;
 using CleanArchitecture.Infrastructure.Extensions.PaymentProvider;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using CleanArchitecture.Server.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -230,6 +232,8 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
+
+builder.Services.AddTransient<ProblemDetailsFactory, AppProblemDetailsFactory>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

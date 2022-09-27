@@ -1,4 +1,5 @@
 ﻿using CleanArchitecture.Core.Utilities;
+using CleanArchitecture.Server.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
@@ -26,7 +27,6 @@ namespace CleanArchitecture.Server.Controllers
         public IActionResult Error(int statusCode)
         {
             var exceptionHandler = HttpContext.Features.Get<IExceptionHandlerFeature>();
-            var exception = exceptionHandler?.Error;
             return Problem(statusCode: statusCode);
         }
     }
@@ -55,30 +55,8 @@ namespace CleanArchitecture.Server.Controllers
         string? type = null,
         IDictionary<string, object?>? extensions = null)
         {
-            var jsonOptions = HttpContext.RequestServices.GetRequiredService<IOptions<JsonOptions>>()?.Value;
-
-            string ResolvePropertyNamingPolicy(string propertyName)
-                => jsonOptions?.JsonSerializerOptions.DictionaryKeyPolicy?.ConvertName(propertyName) ?? propertyName;
-
-            var problemDetails = new ValidationProblemDetails(errors.ToDictionary(k => ResolvePropertyNamingPolicy(k.Key), k => k.Value))
-            {
-                Detail = detail,
-                Instance = instance,
-                Type = type,
-                Status = statusCode,
-            };
-
-            problemDetails.Title = title ?? problemDetails.Title;
-
-            if (extensions is not null)
-            {
-                foreach (var extension in extensions)
-                {
-                    problemDetails.Extensions.Add(ResolvePropertyNamingPolicy(extension.Key), extension.Value);
-                }
-            }
-
-            return ValidationProblem(problemDetails);
+            return ValidationProblem(HttpContext.RequestServices.GetRequiredService<AppProblemDetailsFactory>()
+                .CreateValidationProblemDetails(HttpContext, errors, statusCode, title, type, detail, instance, extensions));
         }
     }
 }

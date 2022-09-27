@@ -11,7 +11,7 @@ routes.push({ key: 'SignOutDialog', pattern: '/account/signout' });
 routes.push({ key: 'SignUpDialog', pattern: '/account/signup' });
 
 // Payments
-routes.push({ key: 'CheckoutDialog', pattern: '/payments/:paymentId/checkout' });
+routes.push({ key: 'CheckoutDialog', pattern: '/payments/:paymentId/checkout/:transactionId' });
 
 const findContextualRoute = (url) => {
     const contextualRoute = routes.map(route => {

@@ -189,33 +189,20 @@ export const getErrorInfo = (error) => {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
         info = error.response.data;
+        canRetry = (error.response.status >= 500) && (error.response.status <= 599);
 
-        canRetry = (info.status >= 500) && (info.status <= 599);
-
-        if (info.stats == 400) {
-            title = 'Invalid Operation'
-            detail = 'The server was unable to handle your request because it was malformed.'
+        if (error.response.status == 401) {
+            title = info.title || 'Authentication Required';
+            detail = info.detail || `We were unable to verify your identity. Please sign in again and if the problem persists, contact support.`;
         }
-        else if (info.status == 401) {
-            title = 'Authentication Required'
-            detail = 'The server was unable to handle your request because you\'re not authenticated.' //`The server cannot process your request because you're not authenticated.`;
-        }
-        else if (info.status == 403) {
-            title = 'Permission Required'
-            detail = 'The server was unable to handle your request due to lack of permissions.' //`The server cannot process your request because you don't have permission.`;
-        }
-        else if (info.status == 404) {
-            title = 'Resource Not Found'
-            detail = `The server was unable to handle your request due to a missing resource.`;
+        else if (error.response.status == 404) {
+            title = info.title || 'Resource Not Found';
+            detail = info.detail || `The resource is not available.`;
         }
         else {
-            title = 'Oops! Something went wrong';
-            detail = `A ${info.stats} error occurred.`;
+            title = info.title || ``;
+            detail = info.detail || `A ${error.response.status} error occurred. Please contact support if the problem persists.`;
         }
-
-        detail += canRetry ? 
-        '\nPlease try again after a while. If the problem persists, contact technical support.' : 
-        '';
     }
     else if (error.request) {
 
@@ -228,13 +215,13 @@ export const getErrorInfo = (error) => {
             detail = 'There is no internet connection. Please check your internet connection and try again.';
         }
         else {
-            title = 'No response from server';
-            detail = 'An error occurred. Please try again after a while. If the problem persists, contact technical support.';
+            title = 'Oops! Something went wrong';
+            detail = 'An unexpected error occurred. Please contact support if the problem persists.';
         }
     }
     else {
         title = 'Oops! Something went wrong';
-        detail = 'An unknown error occurred. Please try again after a while. If the problem persists, contact technical support.';
+        detail = 'An unexpected error occurred. Please contact support if the problem persists.';
     }
 
     return { title, detail, canRetry, ...info };

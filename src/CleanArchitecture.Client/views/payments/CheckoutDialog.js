@@ -68,7 +68,7 @@ const CheckoutDialog = (props) => {
 
     const [payment, setPayment] = useState(null);
     const paymentId = router.query.paymentId;
-    const accessCode = router.query.accessCode;
+    const transactionId = router.query.transactionId;
     const returnUrl = router.query.returnUrl || '/';
 
     const { getPagePath, constructLink } = useContextualRouting();
@@ -107,7 +107,7 @@ const CheckoutDialog = (props) => {
 
     const onLoad = async () => {
 
-        if (!paymentId || !accessCode) {
+        if (!paymentId || !transactionId) {
             const link = constructLink(returnUrl);
             router.replace(link.href, link.as);
             return;
@@ -115,7 +115,7 @@ const CheckoutDialog = (props) => {
 
         try {
             setFetcher({ state: 'loading' });
-            const response = await client.get(`/payments/${paymentId}`, { params: { accessCode } });
+            const response = await client.get(`/payments/${paymentId}/checkout/${transactionId}`);
             setPayment(response.data);
             setFetcher({ state: 'idle' });
         }
@@ -133,7 +133,7 @@ const CheckoutDialog = (props) => {
 
     return (
         <>
-            {fetcher.state == 'loading' ? <ErrorDialog {...props} {...fetcher} errorTitle="Unable to Checkout" onClose={onClose} onRetry={onLoad} /> :
+            {fetcher.state == 'loading' ? <ErrorDialog {...props} {...fetcher} getErrorTitle={(title) => 'Failed to Checkout'} getErrorDetail={(detail) => detail.replace('resource', 'checkout').replace('Resource', 'Checkout')} onClose={onClose} onRetry={onLoad} /> :
                 <Dialog {...props} onClose={onClose}>
                     <DialogTitle component="div" sx={{ pt: 3, pb: 2, textAlign: "center", }}>
                         <Typography variant="h5" component="h1" gutterBottom>Payment Method</Typography>

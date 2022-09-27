@@ -40,7 +40,7 @@ export default function Home(props) {
       <Link {...constructLink('/account/password/reset')}><a>Reset Password</a></Link>
       <br />
       <br />
-      <Link {...constructLink('/payments/29/checkout?accessCode=12345')}><a>Checkout Payment</a></Link>
+      <Link {...constructLink('/payments/29/checkout/12345')}><a>Checkout Payment</a></Link>
       <br />
       <br />
 

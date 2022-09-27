@@ -1,4 +1,6 @@
 ﻿
+using CleanArchitecture.Core.Entities;
+using CleanArchitecture.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +14,8 @@ namespace CleanArchitecture.Infrastructure.Tests
         [Fact]
         public void Do()
         {
+            var paymentIdValue = Algorithm.GenerateMD5("1");
+            var paymentId = StringCompressor.DecompressString(paymentIdValue).To<long>();
 
         }
     }

@@ -47,7 +47,7 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
     };
 
     const link = constructLink(router.asPath);
-    router.replace(link.href, link.as);
+    if (link.as) router.replace(link.href, link.as);
 
     router.events.on('routeChangeStart', handleRouteChangeStart);
     router.events.on('routeChangeComplete', handleRouteChangeComplete);
@@ -71,7 +71,7 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
 
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
   },
 });
 

@@ -18,9 +18,7 @@ namespace CleanArchitecture.Core.Entities
 
         public PaymentStatus Status { get; set; }
 
-        public string AccessCode { get; set; } = null!;
-
-        public string ReferenceCode { get; set; } = null!;
+        public string TransactionId { get; set; } = null!;
     } 
 
     public enum PaymentStatus
