@@ -9,10 +9,11 @@ namespace CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit
 {
     public static class MailKitEmailSenderExtensions
     {
-        public static void AddMailKitEmailSender(this IServiceCollection services, Action<MailKitEmailSenderOptions> configure)
+        public static IServiceCollection AddMailKitEmailSender(this IServiceCollection services, Action<MailKitEmailSenderOptions> configure)
         {
             services.Configure(configure);
             services.AddScoped<IEmailSender, MailKitEmailSender>();
+            return services;
         }
     }
 }

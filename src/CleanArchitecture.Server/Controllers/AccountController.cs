@@ -66,6 +66,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/register")]
         public async Task<IActionResult> RegisterAccount([FromBody] CreateAccountForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<CreateAccountValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -92,6 +94,7 @@ namespace CleanArchitecture.Server.Controllers
             user.UserName = await Algorithm.GenerateSlugAsync($"{form.FirstName} {form.LastName}".ToLowerInvariant(),
                 "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
             user.RegisteredOn = DateTimeOffset.UtcNow;
+            user.Guid = Algorithm.CreateCryptographicallySecureGuid();
 
             (await _userManager.CreateAsync(user, form.Password)).ThrowIfFailed();
 
@@ -112,6 +115,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/verify/send")]
         public async Task<IActionResult> SendVerifyAccount([FromBody] SendVerifyAccountForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<SendVerifyAccountValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -190,6 +195,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/verify")]
         public async Task<IActionResult> VerifyAccount([FromBody] VerifyAccountForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<VerifyAccountValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -251,6 +258,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/password/reset/send")]
         public async Task<IActionResult> SendResetPassword([FromBody] SendResetPasswordForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<SendResetPasswordValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -306,6 +315,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/password/reset/verify")]
         public async Task<IActionResult> VerifyResetPassword([FromBody] VerifyResetPasswordForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<VerifyResetPasswordValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -331,6 +342,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/password/reset")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<ResetPasswordValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -361,6 +374,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/password/change")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<ChangePasswordValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -403,6 +418,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/token/generate")]
         public async Task<IActionResult> GenerateToken([FromBody] CreateAccountTokenForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<CreateAccountTokenValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -480,6 +497,7 @@ namespace CleanArchitecture.Server.Controllers
                     user.UserName = await Algorithm.GenerateSlugAsync($"{firstName} {lastName}".ToLowerInvariant(),
                                  "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
                     user.RegisteredOn = DateTimeOffset.UtcNow;
+                    user.Guid = Algorithm.CreateCryptographicallySecureGuid();
 
                     (await _userManager.CreateAsync(user, Guid.NewGuid().ToString())).ThrowIfFailed();
 
@@ -511,6 +529,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/token/refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshAccountTokenForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
@@ -532,6 +552,8 @@ namespace CleanArchitecture.Server.Controllers
         [HttpPost("account/token/revoke")]
         public async Task<IActionResult> RevokeToken([FromBody] RefreshAccountTokenForm form)
         {
+            if (form == null) throw new ArgumentNullException(nameof(form));
+
             var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 

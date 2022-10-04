@@ -27,6 +27,7 @@ using CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch;
 using CleanArchitecture.Infrastructure.Extensions.PaymentProvider;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using CleanArchitecture.Server.Utilities;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -208,13 +209,14 @@ builder.Services.AddLocalFileStorage(options =>
     options.RootPath = builder.Environment.WebRootPath;
 });
 
-builder.Services.AddPaySwitchProvider(options => {
-    options.ClientId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientId");
-    options.ClientSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientSecret");
-
-    options.MerchantId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantId");
-    options.MerchantSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantSecret");
-});
+builder.Services.AddPaymentProvider()
+                .AddPaySwitchProcessor(options => {
+                    options.ClientId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientId");
+                    options.ClientSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientSecret");
+                    
+                    options.MerchantId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantId");
+                    options.MerchantSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantSecret");
+                });
 
 builder.Services.AddResponseCompression();
 
@@ -231,6 +233,8 @@ builder.Services.AddControllers(options =>
 
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
 builder.Services.AddTransient<ProblemDetailsFactory, AppProblemDetailsFactory>();
@@ -318,6 +322,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseHttpsRedirection();
 

@@ -34,7 +34,7 @@ const PageRoute = ({ Component, pageProps, ...appProps }) => {
         view.replace({ Component });
       }
       else {
-        view.close();
+        view.clear();
       }
     };
 

@@ -55,8 +55,8 @@ namespace CleanArchitecture.Server.Controllers
         string? type = null,
         IDictionary<string, object?>? extensions = null)
         {
-            return ValidationProblem(HttpContext.RequestServices.GetRequiredService<AppProblemDetailsFactory>()
-                .CreateValidationProblemDetails(HttpContext, errors, statusCode, title, type, detail, instance, extensions));
+            var problemDetailsFactory = (AppProblemDetailsFactory)HttpContext.RequestServices.GetServices<ProblemDetailsFactory>().First(_ => _.GetType() == typeof(AppProblemDetailsFactory));
+            return ValidationProblem(problemDetailsFactory.CreateValidationProblemDetails(HttpContext, errors, statusCode, title, type, detail, instance, extensions));
         }
     }
 }

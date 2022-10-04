@@ -1,5 +1,11 @@
 import { AxiosError } from 'axios';
 
+// What is the JavaScript version of sleep()?
+// source: https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
+export function sleep(ms) {
+    return new Promise(resolve => setTimeout(() => resolve(true), ms));
+}
+
 export const isPhoneFormat = (value) => {
     function isNullOrWhitespace(input) {
         return (typeof input === 'undefined' || input == null)
@@ -182,14 +188,12 @@ export const getErrorInfo = (error) => {
     let title = null;
     let detail = null;
     let info = null;
-    let canRetry = true;
 
     if (error.response) {
 
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
         info = error.response.data;
-        canRetry = (error.response.status >= 500) && (error.response.status <= 599);
 
         if (error.response.status == 401) {
             title = info.title || 'Authentication Required';
@@ -197,11 +201,11 @@ export const getErrorInfo = (error) => {
         }
         else if (error.response.status == 404) {
             title = info.title || 'Resource Not Found';
-            detail = info.detail || `The resource is not available.`;
+            detail = info.detail || `The resource is not available. That's all we know.`;
         }
         else {
-            title = info.title || ``;
-            detail = info.detail || `A ${error.response.status} error occurred. Please contact support if the problem persists.`;
+            title = info.title || `Oops! Something went wrong`;
+            detail = info.detail || `An error occurred. Please contact support if the problem persists. (Error ${error.response.status})`;
         }
     }
     else if (error.request) {
@@ -220,11 +224,11 @@ export const getErrorInfo = (error) => {
         }
     }
     else {
-        title = 'Oops! Something went wrong';
-        detail = 'An unexpected error occurred. Please contact support if the problem persists.';
+        title = error.title || 'Oops! Something went wrong';
+        detail = error.title || 'An unexpected error occurred. Please contact support if the problem persists.';
     }
 
-    return { title, detail, canRetry, ...info };
+    return { title, detail, ...info };
 };
 
 export function isHttpError(payload) {

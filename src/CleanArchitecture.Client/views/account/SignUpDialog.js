@@ -50,8 +50,11 @@ const SignUpDialog = (props) => {
                 const link = constructLink(returnUrl);
                 router.push(link);
             }
+
+            setFetcher({ state: 'idle' });
         }
         catch (error) {
+            setFetcher({ state: 'idle', error });
             console.error(error);
 
             if (isHttpError(error)) {
@@ -64,9 +67,6 @@ const SignUpDialog = (props) => {
             }
 
             enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
-        }
-        finally {
-            setFetcher({ state: 'idle' });
         }
     };
 

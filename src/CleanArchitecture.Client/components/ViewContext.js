@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react';
-import { Backdrop, Fade, useMediaQuery } from '@mui/material';
+import { Backdrop, Fade, Box, useMediaQuery } from '@mui/material';
 import { useTheme } from '@emotion/react';
+import { createPortal } from 'react-dom';
 
 // MUI - How to open View imperatively/programmatically
 // source: https://stackoverflow.com/questions/63737526/mui-how-to-open-dialog-imperatively-programmatically
@@ -14,9 +15,10 @@ const ViewContainer = ({ Component, actions, props: { open, disableTransition, .
     const TransitionProps = disableTransition ? { timeout: 0 } : undefined;
 
     return (
-        <Backdrop open={open} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <>
+            {createPortal(<Backdrop open={open} sx={{ color: 'inherit', zIndex: (theme) => theme.zIndex.modal }} />, document.body)}
             <Component maxWidth="xs" fullScreen={fullScreen} fullWidth={true} hideBackdrop={true} open={open} onClose={actions.close} {...{ ...props, TransitionComponent, TransitionProps: { onExited: actions.dispose, ...TransitionProps } }} />
-        </Backdrop>
+        </>
     );
 };
 
@@ -26,6 +28,22 @@ const ViewProvider = ({ children }) => {
 
     const openView = (newView) => {
         setViews((views) => [...views, { ...newView, props: { ...newView.props, open: true } }]);
+    };
+
+    const clearView = () => {
+        setViews((views) => {
+
+            const updatedViews = views.map(view => ({
+                ...view,
+                props: {
+                    ...view.props,
+                    disableTransition: false,
+                    open: false
+                }
+            }));
+
+            return updatedViews;
+        });
     };
 
     const closeView = () => {
@@ -72,7 +90,7 @@ const ViewProvider = ({ children }) => {
         setViews((views) => views.slice(0, views.length - 1));
     };
 
-    const actions = { open: openView, replace: replaceView, close: closeView, dispose: disposeView };
+    const actions = { open: openView, replace: replaceView, close: closeView, dispose: disposeView, clear: clearView };
 
     return (
         <ViewContext.Provider value={actions}>

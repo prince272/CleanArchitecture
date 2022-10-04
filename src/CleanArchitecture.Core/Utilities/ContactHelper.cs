@@ -18,7 +18,7 @@ namespace CleanArchitecture.Core.Utilities
             return Regex.IsMatch(value.ToLowerInvariant(), "^[-+0-9() ]+$") ? ContactType.PhoneNumber : ContactType.EmailAddress;
         }
 
-        public static (string Number, PhoneNumber Details) ParsePhoneNumber(string value)
+        public static (string Number, PhoneNumber Info) ParsePhoneNumber(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException($"Value cannot be null or whitespace.", nameof(value));
@@ -34,7 +34,7 @@ namespace CleanArchitecture.Core.Utilities
             throw new FormatException($"Input '{value}' was not recognized as a valid PhoneNumber.");
         }
 
-        public static bool TryParsePhoneNumber(string value, out (string Number, PhoneNumber Details) phoneDetails)
+        public static bool TryParsePhoneNumber(string value, out (string Number, PhoneNumber Info) phoneDetails)
         {
             try
             {
@@ -50,7 +50,7 @@ namespace CleanArchitecture.Core.Utilities
 
         // C# code to validate email address
         // source: https://stackoverflow.com/questions/1365407/c-sharp-code-to-validate-email-address
-        public static (string Address, System.Net.Mail.MailAddress Details) ParseEmailAddress(string value)
+        public static (string Address, System.Net.Mail.MailAddress Info) ParseEmailAddress(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException($"Value cannot be null or whitespace.", nameof(value));
@@ -67,7 +67,7 @@ namespace CleanArchitecture.Core.Utilities
             throw new FormatException($"Input '{value}' was not recognized as a valid MailAddress.");
         }
 
-        public static bool TryParseEmailAddress(string value, out (string Address, System.Net.Mail.MailAddress Details) emailDetails)
+        public static bool TryParseEmailAddress(string value, out (string Address, System.Net.Mail.MailAddress Info) emailDetails)
         {
             try
             {

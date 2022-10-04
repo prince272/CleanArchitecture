@@ -63,8 +63,11 @@ const ResetPasswordDialog = (props) => {
                     router.push(link.href, link.as);
                 }
             }
+
+            setFetcher({ state: 'idle' });
         }
         catch (error) {
+            setFetcher({ state: 'idle', error });
             console.error(error);
 
             if (isHttpError(error)) {
@@ -77,9 +80,6 @@ const ResetPasswordDialog = (props) => {
             }
 
             enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
-        }
-        finally {
-            setFetcher({ state: 'idle' });
         }
     };
 

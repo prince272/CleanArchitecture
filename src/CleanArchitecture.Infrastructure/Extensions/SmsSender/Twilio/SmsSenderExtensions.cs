@@ -9,10 +9,11 @@ namespace CleanArchitecture.Infrastructure.Extensions.SmsSender.Twilio
 {
     public static class SmsSenderExtensions
     {
-        public static void AddSmsSender(this IServiceCollection services, Action<SmsSenderOptions> configure)
+        public static IServiceCollection AddSmsSender(this IServiceCollection services, Action<SmsSenderOptions> configure)
         {
             services.Configure(configure);
             services.AddScoped<ISmsSender, SmsSender>();
+            return services;
         }
     }
 }

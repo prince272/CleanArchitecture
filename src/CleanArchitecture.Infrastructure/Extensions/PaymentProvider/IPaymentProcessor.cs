@@ -9,6 +9,16 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 {
     public interface IPaymentProcessor
     {
-        Task<PaymentResult> ProcessAsync(Payment payment, IDictionary<string, object> details);
+        string Gateway { get; }
+
+        PaymentMethod Method { get; }
+
+        string GenerateTransactionId();
+
+        Task<PaymentIssuer?> GetMobileIssuerAsync(string mobileNumber);
+
+        Task<PaymentResult> ProcessAsync(Payment payment, CancellationToken cancellationToken = default);
+
+        Task VerifyAsync(Payment payment, CancellationToken cancellationToken = default);
     }
 }

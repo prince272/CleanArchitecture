@@ -53,8 +53,11 @@ const VerifyAccountDialog = (props) => {
                 const link = constructLink(returnUrl, { inputs: router.query.inputs });
                 router.push(link.href, link.as);
             }
+
+            setFetcher({ state: 'idle' });
         }
         catch (error) {
+            setFetcher({ state: 'idle', error });
             console.error(error);
 
             if (isHttpError(error)) {
@@ -67,9 +70,6 @@ const VerifyAccountDialog = (props) => {
             }
 
             enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
-        }
-        finally {
-            setFetcher({state: 'idle' });
         }
     };
 

@@ -1,4 +1,6 @@
-﻿namespace CleanArchitecture.Server.Extensions.Anonymous
+﻿#nullable disable
+
+namespace CleanArchitecture.Server.Extensions.Anonymous
 {
     public class AnonymousFeature : IAnonymousFeature
     {

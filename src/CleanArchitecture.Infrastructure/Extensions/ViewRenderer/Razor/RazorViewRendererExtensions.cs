@@ -13,16 +13,15 @@ namespace CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor
 {
     public static class RazorViewRendererExtensions
     {
-        public static void AddRazorViewRenderer(this IServiceCollection services, Action<RazorViewRendererOptions> configure)
+        public static IServiceCollection AddRazorViewRenderer(this IServiceCollection services, Action<RazorViewRendererOptions> configure)
         {
             services.Configure(configure);
-
-            var options = services.BuildServiceProvider().GetRequiredService<IOptions<RazorViewRendererOptions>>();
 
             var builder = services.AddMvcCore();
             builder.AddRazorViewEngine();
             services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
             services.AddScoped<IViewRenderer, RazorViewRenderer>();
+            return services;
         }
     }
 }

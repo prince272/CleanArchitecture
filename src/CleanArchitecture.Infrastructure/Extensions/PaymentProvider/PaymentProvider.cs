@@ -16,103 +16,103 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
     public class PaymentProvider : IPaymentProvider
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly IUnitOfWork _unitOfWork;
 
-        public PaymentProvider(IServiceProvider serviceProvider, IUnitOfWork unitOfWork)
+        public PaymentProvider(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
-        PaymentIssuer? GetMobileIssuer(string mobileNumber)
+        private IPaymentProcessor[] GetPaymentProcessors()
         {
-            var mobileIssuers = new List<PaymentIssuer>()
-            {
-               new ("MTN", "^\\+233(24|54|55|59)", "MTN"),
-               new ("MTN", "^\\+233(20|50)", "Vodafone"),
-               new ("MTN", "^\\+233(27|57|26|56)", "AirtelTigo"),
-            };
-
-            return mobileIssuers.FirstOrDefault(_ => Regex.IsMatch($"{mobileNumber}", _.Pattern));
+            return _serviceProvider.GetServices<IPaymentProcessor>().ToArray();
         }
 
-        public async Task<PaymentResult> ProcessAsync(Payment payment, IDictionary<string, object> details)
+        IPaymentProcessor? GetPaymentProcessor(string? paymentGateway)
         {
-            var errors = new Dictionary<string, string[]>();
+            return _serviceProvider.GetServices<IPaymentProcessor>().FirstOrDefault(_ => _.Gateway.Equals(paymentGateway, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public async Task<PaymentResult> MapAsync(Payment payment, IDictionary<string, string> details, CancellationToken cancellationToken = default)
+        {
+            if (payment == null) throw new ArgumentNullException(nameof(payment));
+
             details = details.ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.InvariantCultureIgnoreCase);
 
-            // Payment Method Validation
-            var paymentMethodValue = details.TryGetValue(PaymentProperties.Method)?.ToString();
+            var paymentProcessors = GetPaymentProcessors();
+            var paymentOption = details.GetValueOrDefault(PaymentProperties.PaymentOption);
 
-            if (string.IsNullOrWhiteSpace(paymentMethodValue))
+            if (string.IsNullOrWhiteSpace(paymentOption))
             {
                 return PaymentResult.Failed(new Dictionary<string, string[]>() { {
-                       PaymentProperties.Method, new[] { $"'{PaymentProperties.Method.Humanize()}' must not be empty." } } });
+                       PaymentProperties.PaymentOption, new[] { $"'{PaymentProperties.PaymentOption.Humanize()}' must not be empty." } } });
             }
 
-            if (!paymentMethodValue.To(out PaymentMethod paymentMethod))
+            if (!Enum.TryParse<PaymentMethod>(paymentOption, true, out var paymentMethod))
             {
-                return PaymentResult.Failed(new Dictionary<string, string[]>() { {
-                       PaymentProperties.Method, new[] { $"'{PaymentProperties.Method.Humanize()}' is not valid." } } });
+                payment.Gateway = paymentProcessors.Where(_ => _.Gateway.Equals(paymentOption, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault()?.Gateway;
+                payment.Method = PaymentMethod.Default;
+
+                if (string.IsNullOrWhiteSpace(payment.Gateway))
+                    return PaymentResult.Failed(new Dictionary<string, string[]>() { {
+                       PaymentProperties.PaymentOption, new[] { $"'{PaymentProperties.PaymentOption.Humanize()}' is not supported." } } });
+            }
+            else
+            {
+                payment.Gateway = paymentProcessors.Where(_ => _.Method.HasFlag(paymentMethod)).First().Gateway;
+                payment.Method = paymentMethod;
             }
 
-            details[PaymentProperties.Method] = paymentMethod;
+            var paymentProcessor = GetPaymentProcessor(payment.Gateway);
+            if (paymentProcessor == null) throw new InvalidOperationException($"The payment gateway has no registered service for the type '{typeof(IPaymentProcessor)}'.");
 
-            if (payment.Type == PaymentType.Debit)
+            if (payment.Method == PaymentMethod.MobileMoney)
             {
-                if (paymentMethod == PaymentMethod.MobileMoney)
+                payment.MobileNumber = details.GetValueOrDefault(nameof(PaymentProperties.MobileNumber))?.ToString();
+
+                if (string.IsNullOrWhiteSpace(payment.MobileNumber))
                 {
-                    // MobileNumber Validation
-                    var mobileNumber = details.TryGetValue(PaymentProperties.MobileNumber)?.ToString();
-
-                    if (string.IsNullOrWhiteSpace(mobileNumber))
-                    {
-                        return PaymentResult.Failed(new Dictionary<string, string[]>() { {
-                               PaymentProperties.MobileNumber, new[] { $"'{PaymentProperties.MobileNumber.Humanize()}' must not be empty." } } });
-                    }
-
-                    if (!ContactHelper.TryParsePhoneNumber(mobileNumber, out var mobileDetails))
-                    {
-                        return PaymentResult.Failed(new Dictionary<string, string[]>() { {
-                               PaymentProperties.MobileNumber, new[] { $"'{PaymentProperties.MobileNumber.Humanize()}' is not valid." } } });
-                    }
-
-                    mobileNumber = mobileDetails.Number;
-                    var mobileIssuer = GetMobileIssuer(mobileNumber);
-
-                    if (mobileIssuer == null)
-                    {
-                        return PaymentResult.Failed(new Dictionary<string, string[]>() { {
-                               PaymentProperties.MobileNumber, new[] { $"'{PaymentProperties.MobileNumber.Humanize()}' is not supported." } } });
-                    }
-
-                    details[PaymentProperties.MobileNumber] = mobileNumber;
-                    details[PaymentProperties.MobileIssuer] = mobileIssuer.Code;
+                    return PaymentResult.Failed(new Dictionary<string, string[]>() { {
+                               nameof(PaymentProperties.MobileNumber), new[] { $"'{nameof(PaymentProperties.MobileNumber).Humanize()}' must not be empty." } } });
                 }
-                else if (paymentMethod == PaymentMethod.PlasticMoney)
+
+                if (!ContactHelper.TryParsePhoneNumber(payment.MobileNumber, out var mobileDetails))
                 {
-
+                    return PaymentResult.Failed(new Dictionary<string, string[]>() { {
+                               nameof(PaymentProperties.MobileNumber), new[] { $"'{nameof(PaymentProperties.MobileNumber).Humanize()}' is not valid." } } });
                 }
-                else throw new InvalidOperationException();
-            }
-            else throw new InvalidOperationException();
 
-            var paymentProcessor = GetPaymentProcessor(paymentMethod);
-            var paymentResult = await paymentProcessor.ProcessAsync(payment, details);
+                payment.MobileNumber = mobileDetails.Number;
+                payment.MobileIssuer = await paymentProcessor.GetMobileIssuerAsync(mobileDetails.Number);
 
-            if (paymentResult.Success)
-            {
-                payment.Status = PaymentStatus.Processing;
-                _unitOfWork.Update(payment);
-                await _unitOfWork.CompleteAsync();
+                if (payment.MobileIssuer == null)
+                {
+                    return PaymentResult.Failed(new Dictionary<string, string[]>() { {
+                               nameof(PaymentProperties.MobileNumber), new[] { $"'{nameof(PaymentProperties.MobileNumber).Humanize()}' is not supported." } } });
+                }
             }
 
-            return paymentResult;
+            payment.TransactionId = paymentProcessor.GenerateTransactionId();
+            return PaymentResult.Succeeded();
         }
 
-        IPaymentProcessor GetPaymentProcessor(PaymentMethod paymentMethod)
+        public Task<PaymentResult> ProcessAsync(Payment payment, CancellationToken cancellationToken = default)
         {
-            return _serviceProvider.GetServices<IPaymentProcessor>().First(_ => ((IPaymentMethod)_).SupportedMethods.HasFlag(paymentMethod));
+            if (payment == null) throw new ArgumentNullException(nameof(payment));
+
+            var paymentProcessor = GetPaymentProcessor(payment.Gateway);
+            if (paymentProcessor == null) throw new InvalidOperationException($"The payment gateway has no registered service for the type '{typeof(IPaymentProcessor)}'.");
+
+            return paymentProcessor.ProcessAsync(payment, cancellationToken);
+        }
+
+        public Task VerifyAsync(Payment payment, CancellationToken cancellationToken = default)
+        {
+            if (payment == null) throw new ArgumentNullException(nameof(payment));
+
+            var paymentProcessor = GetPaymentProcessor(payment.Gateway);
+            if (paymentProcessor == null) throw new InvalidOperationException($"The payment gateway has no registered service for the type '{typeof(IPaymentProcessor)}'.");
+
+            return paymentProcessor.VerifyAsync(payment, cancellationToken);
         }
     }
 }

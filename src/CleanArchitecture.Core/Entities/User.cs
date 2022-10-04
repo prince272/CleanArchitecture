@@ -10,6 +10,8 @@ namespace CleanArchitecture.Core.Entities
 {
     public class User : IdentityUser<long>, IEntity
     {
+        public Guid Guid { get; set; }
+
         public string FirstName { get; set; } = null!;
 
         public string LastName { get; set; } = null!;

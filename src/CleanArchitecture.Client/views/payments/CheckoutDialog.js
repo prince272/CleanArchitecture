@@ -3,21 +3,24 @@ import {
     Typography, TextField, Link as MuiLink, Dialog,
     Accordion as MuiAccordion,
     AccordionSummary as MuiAccordionSummary,
-    AccordionDetails as MuiAccordionDetails, Radio, CircularProgress
+    AccordionDetails as MuiAccordionDetails, Radio, CircularProgress, Alert
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { DialogCloseButton, PasswordField, PhoneTextField, useClient } from '../../components';
-import ErrorDialog from '../misc/ErrorDialog';
+import { DialogCloseButton, PhoneTextField, useClient, useView } from '../../components';
+import MessageDialog from '../misc/MessageDialog';
 import * as Icons from '@mui/icons-material';
 import Link from 'next/link';
-import React, { useEffect, useState, useMemo } from 'react';
+import Image from 'next/image';
+import React, { useEffect, useState, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { preventDefault, getErrorInfo, isHttpError, getPath } from '../../utils';
+import { preventDefault, getErrorInfo, isHttpError, sleep } from '../../utils';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { useContextualRouting } from '../routes.views';
 import { CLIENT_URL } from '../../client';
 import { styled } from '@mui/material/styles';
+import { useCallback } from 'react';
+
 
 const Accordion = styled((props) => {
     const childrenWithProps = React.Children.map(props.children, child => {
@@ -60,6 +63,7 @@ const AccordionDetails = styled(MuiAccordionDetails)(({ theme, ...props }) => ({
 }));
 
 const CheckoutDialog = (props) => {
+    const view = useView();
     const router = useRouter();
     const client = useClient();
 
@@ -67,25 +71,29 @@ const CheckoutDialog = (props) => {
     const formState = form.formState;
 
     const [payment, setPayment] = useState(null);
-    const paymentId = router.query.paymentId;
-    const transactionId = router.query.transactionId;
+    const checkoutId = router.query.checkoutId;
     const returnUrl = router.query.returnUrl || '/';
 
     const { getPagePath, constructLink } = useContextualRouting();
-    const [paymentMethod, setPaymentMethod] = useState(null);
 
-    const [fetcher, setFetcher] = useState({ state: 'idle' });
+    const [fetcher, setFetcher] = useState({ state: 'loading' });
     const { enqueueSnackbar } = useSnackbar();
+
+    const paymentMonitorRef = useRef({ active: false });
 
     const onSubmit = async (inputs) => {
 
         try {
-            setFetcher({ state: 'processing' });
-
-            let response = await client.post('/payments/checkout', inputs);
+            setFetcher({ state: 'submitting' });
+            let response = await client.post(`/payments/checkout/${checkoutId}`, inputs);
             form.clearErrors();
+            setFetcher({ state: 'idle' });
+
+            setPayment(payment => ({ ...payment, status: 'processing' }));
+            paymentMonitorRef.current = { active: true };
         }
         catch (error) {
+            setFetcher({ state: 'idle', error });
             console.error(error);
 
             if (isHttpError(error)) {
@@ -100,14 +108,11 @@ const CheckoutDialog = (props) => {
 
             enqueueSnackbar(getErrorInfo(error).title, { variant: 'error' });
         }
-        finally {
-            setFetcher({ state: 'idle' });
-        }
     };
 
     const onLoad = async () => {
 
-        if (!paymentId || !transactionId) {
+        if (!checkoutId) {
             const link = constructLink(returnUrl);
             router.replace(link.href, link.as);
             return;
@@ -115,13 +120,19 @@ const CheckoutDialog = (props) => {
 
         try {
             setFetcher({ state: 'loading' });
-            const response = await client.get(`/payments/${paymentId}/checkout/${transactionId}`);
+            const response = await client.get(`/payments/checkout/${checkoutId}`);
             setPayment(response.data);
             setFetcher({ state: 'idle' });
+
+            if (response.data.status == 'processing') {
+                paymentMonitorRef.current = { active: true };
+            }
+
+            monitorPayment();
         }
         catch (error) {
-            console.error(error);
             setFetcher(fetcher => ({ ...fetcher, error }));
+            console.error(error);
         }
     };
 
@@ -129,63 +140,124 @@ const CheckoutDialog = (props) => {
         router.push(getPagePath());
     };
 
+    const monitorPayment = useCallback(async () => {
+
+        while (paymentMonitorRef.current != null) {
+
+            if (paymentMonitorRef.current.active) {
+                try {
+                    const response = await client.get(`/payments/checkout/${checkoutId}`);
+                    if (response.data.status != 'processing') {
+                        paymentMonitorRef.current = { active: false };
+                        setPayment(response.data);
+                    }
+                }
+                catch (error) {
+                    console.error(error);
+                }
+            }
+
+            await sleep(1000);
+        }
+
+    }, []);
+
     useEffect(() => { onLoad(); }, []);
+
+    useEffect(() => {
+
+
+        return () => {
+            paymentMonitorRef.current = null;
+        };
+    }, []);
+
+    const canReload = (fetcher?.error?.response ? (fetcher?.error?.response?.status >= 500 && fetcher?.error?.response?.status <= 599) : true);
 
     return (
         <>
-            {fetcher.state == 'loading' ? <ErrorDialog {...props} {...fetcher} getErrorTitle={(title) => 'Failed to Checkout'} getErrorDetail={(detail) => detail.replace('resource', 'checkout').replace('Resource', 'Checkout')} onClose={onClose} onRetry={onLoad} /> :
+            {fetcher.state == 'loading' ? <MessageDialog {...props} onClose={() => { }} {...fetcher}
+                getErrorTitle={() => 'Failed to Checkout'}
+                getErrorDetail={(detail) => detail.replace('resource', 'checkout').replace('Resource', 'Checkout')}
+
+                onCancel={onClose}
+                cancelLabel={canReload ? 'Cancel' : 'Ok'}
+
+                onAccept={canReload ? onLoad : undefined}
+                acceptLabel={canReload ? 'Try again' : 'Ok'}
+
+            /> :
                 <Dialog {...props} onClose={onClose}>
-                    <DialogTitle component="div" sx={{ pt: 3, pb: 2, textAlign: "center", }}>
-                        <Typography variant="h5" component="h1" gutterBottom>Payment Method</Typography>
-                        <Typography variant="body2" gutterBottom>
-                            {{
-                                mobileMoney: 'Enter your mobile number to pay'
-                            }[paymentMethod] || 'Select the payment method you want to use'}
-                        </Typography>
+                    <DialogTitle component="div" sx={{ pt: 3, pb: 1, textAlign: "center", }}>
+                        <Box>
+                            <Typography variant="h5" component="h1" gutterBottom>Payment Method</Typography>
+                        </Box>
                         <DialogCloseButton onClose={onClose} />
                     </DialogTitle>
                     <DialogContent sx={{ px: 0, pb: 0 }}>
-                        <Box component="form" sx={{ pb: 3 }} onSubmit={preventDefault(() => onSubmit({ ...form.watch(), method: paymentMethod }))}>
-                            <Accordion expanded={paymentMethod == 'plasticMoney'} onChange={() => { setPaymentMethod('plasticMoney'); }} TransitionProps={{ unmountOnExit: true }} >
-                                <AccordionSummary>
-                                    <Typography>Pay with Credit or Debit Card</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails>
+                        <Box component="form" onSubmit={preventDefault(() => onSubmit({ ...form.watch(), paymentOption: payment.method == 'default' ? payment.gateway : payment.method }))}>
 
-                                </AccordionDetails>
-                            </Accordion>
-                            <Accordion expanded={paymentMethod == 'mobileMoney'} onChange={() => { setPaymentMethod('mobileMoney'); }} TransitionProps={{ unmountOnExit: true }}>
-                                <AccordionSummary>
-                                    <Typography>Pay with Mobile Money</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails>
-                                    <Grid container p={2} spacing={3}>
-                                        <Grid item xs={12}>
-                                            <Controller
-                                                name="mobileNumber"
-                                                control={form.control}
-                                                render={({ field }) => <PhoneTextField {...field}
-                                                    phone={true}
-                                                    label="Mobile number"
-                                                    variant="standard"
-                                                    error={!!formState.errors.mobileNumber}
-                                                    helperText={formState.errors.mobileNumber?.message}
-                                                    fullWidth
-                                                    autoFocus />}
-                                            />
+
+                            {(payment.status == 'pending') && <Box px={2} pb={2}><Alert variant="filled" severity="info">
+                                {{
+                                    plasticMoney: 'Enter your card details to pay.',
+                                    mobileMoney: 'Enter your mobile number to pay.',
+                                }[payment.method] || 'Select the payment method you want to use.'}
+                            </Alert></Box>}
+
+                            {(payment.status == 'processing') && <Box px={2} pb={2}><Alert variant="filled" severity="info" iconMapping={{ info: <CircularProgress size="1.4rem" color="inherit" /> }}
+                                action={<Button color="inherit" size="small" onClick={() => { paymentMonitorRef.current = { active: false }; setPayment(payment => ({ ...payment, status: 'pending' })); }}>Cancel</Button>}>Waiting for payment approval...</Alert></Box>}
+
+                            {(payment.status == 'completed') && <Box px={2} pb={2}><Alert variant="filled" severity="success" onClose={() => { setPayment(payment => ({ ...payment, status: 'pending' })) }}>Your payment was successful.</Alert></Box>}
+
+                            {(payment.status == 'declined' || payment.status == 'expired') && <Box px={2} pb={2}><Alert variant="filled" severity="error" onClose={() => { setPayment(payment => ({ ...payment, status: 'pending' })) }}>Your payment was not successful.</Alert></Box>}
+
+                            <Box mb={3}>
+                                <Accordion expanded={payment.method == 'plasticMoney'} onChange={() => setPayment(payment => ({ ...payment, method: 'plasticMoney', gateway: null }))} TransitionProps={{ unmountOnExit: true }} >
+                                    <AccordionSummary>
+                                        <Typography>Pay with Credit or Debit Card</Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+
+                                    </AccordionDetails>
+                                </Accordion>
+
+                                <Accordion expanded={payment.method == 'mobileMoney'} onChange={() => setPayment(payment => ({ ...payment, method: 'mobileMoney', gateway: null }))} TransitionProps={{ unmountOnExit: true }}>
+                                    <AccordionSummary>
+                                        <Typography>Pay with Mobile Money</Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                        <Grid container p={2} spacing={3}>
+                                            <Grid item xs={12}>
+                                                <Controller
+                                                    name="mobileNumber"
+                                                    control={form.control}
+                                                    render={({ field }) => <PhoneTextField {...field}
+                                                        phone={true}
+                                                        label="Mobile number"
+                                                        variant="standard"
+                                                        error={!!formState.errors.mobileNumber}
+                                                        helperText={formState.errors.mobileNumber?.message}
+                                                        fullWidth
+                                                        autoFocus />}
+                                                />
+                                            </Grid>
+
+                                            <Grid item xs={12}>
+                                                <Box>
+                                                    <LoadingButton startIcon={<></>} loading={(fetcher.state == 'submitting') && payment.method == 'mobileMoney'} loadingPosition="start" disabled={payment.status == 'processing'} type="submit" fullWidth variant="contained" size="large">
+                                                        Pay {payment?.amount}
+                                                    </LoadingButton>
+                                                </Box>
+                                            </Grid>
                                         </Grid>
-                                        <Grid item xs={12}>
-                                            <Box>
-                                                <LoadingButton startIcon={<></>} loading={fetcher.state == 'submitting' && paymentMethod == 'credential'} loadingPosition="start" type="submit" fullWidth variant="contained" size="large">
-                                                    Pay {payment?.amount}
-                                                </LoadingButton>
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
-                                </AccordionDetails>
-                            </Accordion>
+                                    </AccordionDetails>
+                                </Accordion>
+                            </Box>
+
+                            <Typography component="div" textAlign="center" variant="overline">WE ACCEPT ALL PAYMENTS THROUGH</Typography>
+                            <Box px={3} pb={2}><Box position="relative" height={70}><Image src="/img/payment-footer.png" layout="fill" objectFit="contain" /></Box></Box>
                         </Box>
-                        <Typography variant="body2" textAlign="center" pb={4}>Don't have an account? <Link {...constructLink({ pathname: '/account/signup', query: { returnUrl } })} passHref><MuiLink underline="hover">Sign up</MuiLink></Link></Typography>
                     </DialogContent>
                 </Dialog>
             }

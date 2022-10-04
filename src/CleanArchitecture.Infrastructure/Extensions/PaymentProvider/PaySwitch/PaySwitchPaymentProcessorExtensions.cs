@@ -11,7 +11,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
 {
     public static class PaySwitchPaymentProcessorExtensions
     {
-        public static void AddPaySwitchProvider(this IServiceCollection services, Action<PaySwitchPaymentProcessorOptions> configure)
+        public static IServiceCollection AddPaySwitchProcessor(this IServiceCollection services, Action<PaySwitchPaymentProcessorOptions> configure)
         {
             services.TryAddTransient<IPaymentProvider, PaymentProvider>();
             services.AddHttpClient(nameof(PaySwitchPaymentProcessor))
@@ -27,6 +27,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
                  });
             services.Configure(configure);
             services.AddTransient<IPaymentProcessor, PaySwitchPaymentProcessor>();
+            return services;
         }
     }
 }

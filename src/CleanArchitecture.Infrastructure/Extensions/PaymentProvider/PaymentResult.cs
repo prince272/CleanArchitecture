@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -16,6 +17,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 
         }
 
+        [MemberNotNullWhen(false, nameof(Errors))]
         public bool Success { get; protected set; }
 
         public string? Message { get; protected set; }
@@ -38,7 +40,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
         {
             return new PaymentResult()
             {
-                Success = false,
+                Success = true,
                 Data = data ?? new Dictionary<string, object>(),
                 Message = message
             };
