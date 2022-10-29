@@ -49,7 +49,7 @@ const getUserStore = (settings) => {
     const refreshToken = storage.get(refreshTokenStorageKey);
     const user = storage.get(userStorageKey);
 
-    const subject = new BehaviorSubject(user ? { ...user, accessToken, refreshToken } : null);
+    const subject = new BehaviorSubject((user && refreshToken) ? { ...user, accessToken, refreshToken } : null);
 
     const setAccessToken = (value, ttl) => {
         storage.set(accessTokenStorageKey, value, ttl);
@@ -59,13 +59,12 @@ const getUserStore = (settings) => {
         storage.set(refreshTokenStorageKey, value, ttl);
     };
 
-    const setUser = (value, ttl) => {
-        storage.set(userStorageKey, value, ttl);
-    };
-
-    const updateUser = (value) => {
+    const updateUser = (value, ttl) => {
         subject.next(value);
-    }
+
+        const { accessToken, refreshToken, ...user } = value;
+        if (ttl) storage.set(userStorageKey, user, ttl);
+    };
 
     const clear = () => {
         storage.remove(accessTokenStorageKey);
@@ -78,7 +77,6 @@ const getUserStore = (settings) => {
     return {
         setAccessToken,
         setRefreshToken,
-        setUser,
         updateUser,
         subject,
         clear
@@ -131,7 +129,7 @@ const axiosAuth = (axios, settings) => {
     axios.interceptors.request.use((config) => {
         const user = store.subject.getValue();
 
-        if (user && user.accessToken && user.refreshToken) {
+        if ((user && user.refreshToken) && user.accessToken) {
             config.headers[settings.authHeaderName] = `${settings.authHeaderPrefix}${user.accessToken}`;
         }
         else {
@@ -150,7 +148,7 @@ const axiosAuth = (axios, settings) => {
 
                 if (settings.unauthorized(error.response)) {
 
-                    // If we have no configraution to retry the request
+                    // If we have no configuration to retry the request
                     const { config } = error;
                     if (!config) return Promise.reject(error);
 
@@ -183,9 +181,8 @@ const axiosAuth = (axios, settings) => {
                                 const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn, user } = response.data;
                                 store.setAccessToken(accessToken, accessTokenExpiresIn);
                                 store.setRefreshToken(refreshToken, refreshTokenExpiresIn);
-                                store.setUser(user, refreshTokenExpiresIn);
 
-                                store.updateUser({ ...user, accessToken, refreshToken });
+                                store.updateUser({ ...user, accessToken, refreshToken }, refreshTokenExpiresIn);
                             })
                             .catch((error) => {
 
@@ -236,9 +233,8 @@ const axiosAuth = (axios, settings) => {
                     const { accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn, user } = response.data;
                     store.setAccessToken(accessToken, accessTokenExpiresIn);
                     store.setRefreshToken(refreshToken, refreshTokenExpiresIn);
-                    store.setUser(user, refreshTokenExpiresIn);
 
-                    store.updateUser({ ...user, accessToken, refreshToken });
+                    store.updateUser({ ...user, accessToken, refreshToken }, refreshTokenExpiresIn);
                     return response;
                 });
         },

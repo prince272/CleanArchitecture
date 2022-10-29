@@ -8,7 +8,7 @@ import { findContextualRoute } from '../views/routes';
 import { getPath, isPhoneFormat } from '../utils';
 import { FileUploader } from '../components/FileUploader';
 import { MuiTelInput } from 'mui-tel-input';
-import { TextField } from '@mui/material';
+import { Grid, TextField } from '@mui/material';
 import { getCountryCallingCode } from 'libphonenumber-js';
 
 export default function Home(props) {
@@ -46,7 +46,11 @@ export default function Home(props) {
 
       <main>
         {JSON.stringify(client.user)}
-        <FileUploader />
+        <Grid container>
+          <Grid item  xs={12}>
+            <FileUploader />
+          </Grid>
+        </Grid>
         {value}
       </main>
     </div>

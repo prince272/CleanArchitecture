@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useClient } from './ClientContext';
 
 import { FilePond, registerPlugin } from 'react-filepond';
@@ -52,6 +51,9 @@ export const FileUploader = (props) => {
                         if (client.user) { headers[AUTH_HEADER_NAME] = `${AUTH_HEADER_PREFIX}${client.user.accessToken}`; }
                         return headers;
                     },
+                    onerror: (error) => {
+
+                    }
                 },
                 patch: {
                     url: '',
@@ -65,6 +67,9 @@ export const FileUploader = (props) => {
 
                         if (client.user) { headers[AUTH_HEADER_NAME] = `${AUTH_HEADER_PREFIX}${client.user.accessToken}`; }
                         return headers;
+                    },
+                    onerror: (error) => {
+                        
                     }
                 },
                 revert: (path, load, error) => {

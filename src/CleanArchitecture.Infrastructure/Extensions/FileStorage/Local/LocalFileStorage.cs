@@ -17,7 +17,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
             _localFileStorageOptions = localFileStorageOptions.Value ?? throw new ArgumentNullException(nameof(localFileStorageOptions));
         }
 
-        public Task PrepareAsync(string path)
+        public Task PrepareAsync(string path, CancellationToken cancellationToken = default)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
@@ -26,7 +26,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
             return Task.CompletedTask;
         }
 
-        public async Task<Stream?> WriteAsync(string path, Stream stream, long offset, long length)
+        public async Task<Stream?> WriteAsync(string path, Stream stream, long offset, long length, CancellationToken cancellationToken = default)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (stream == null) throw new ArgumentNullException(nameof(stream));
@@ -36,7 +36,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
             using (var fileStream = new FileStream(tempPath, FileMode.Open, FileAccess.Write, FileShare.None))
             {
                 fileStream.Seek(offset, SeekOrigin.Begin);
-                await stream.CopyToAsync(fileStream);
+                await stream.CopyToAsync(fileStream, cancellationToken);
                 fileLength = fileStream.Length;
             }
 
@@ -56,7 +56,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
             }
         }
 
-        public Task DeleteAsync(string path)
+        public Task DeleteAsync(string path, CancellationToken cancellationToken = default)
         {
             var tempPath = GetTempPath(path);
 
