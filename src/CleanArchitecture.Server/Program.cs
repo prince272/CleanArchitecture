@@ -44,7 +44,7 @@ var defaltConnectionString = builder.Configuration.GetConnectionString("Default"
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(defaltConnectionString, sqlOptions =>
     {
-
+        sqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.GetName().Name);
     }));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
