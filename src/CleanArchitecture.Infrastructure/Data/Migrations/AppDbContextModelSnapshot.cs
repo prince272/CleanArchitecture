@@ -54,43 +54,6 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.ToTable("BearerToken");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.Media", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
-
-                    b.Property<int?>("Height")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MimeType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Path")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Width")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Media");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Core.Entities.Payment", b =>
                 {
                     b.Property<long>("Id")
@@ -438,6 +401,49 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                         });
 
                     b.Navigation("MobileIssuer");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Core.Entities.Product", b =>
+                {
+                    b.OwnsOne("CleanArchitecture.Core.Entities.Media", "Image", b1 =>
+                        {
+                            b1.Property<long>("ProductId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<int?>("Height")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("MimeType")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Path")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<long>("Size")
+                                .HasColumnType("bigint");
+
+                            b1.Property<int>("Type")
+                                .HasColumnType("int");
+
+                            b1.Property<int?>("Width")
+                                .HasColumnType("int");
+
+                            b1.HasKey("ProductId");
+
+                            b1.ToTable("Product");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProductId");
+                        });
+
+                    b.Navigation("Image")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CleanArchitecture.Core.Entities.UserRole", b =>

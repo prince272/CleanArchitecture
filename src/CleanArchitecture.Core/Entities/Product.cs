@@ -13,5 +13,7 @@ namespace CleanArchitecture.Core.Entities
         public string Name { get; set; } = null!;
 
         public decimal Price { get; set; }
+
+        public Media Image { get; set; } = null!;
     }
 }

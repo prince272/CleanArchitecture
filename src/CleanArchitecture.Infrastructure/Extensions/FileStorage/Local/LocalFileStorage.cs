@@ -31,22 +31,22 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (stream == null) throw new ArgumentNullException(nameof(stream));
 
-            long fileLength = 0;
+            long tempFileLength = 0;
             var tempPath = GetTempPath(path);
-            using (var fileStream = new FileStream(tempPath, FileMode.Open, FileAccess.Write, FileShare.None))
+            using (var tempFileStream = new FileStream(tempPath, FileMode.Open, FileAccess.Write, FileShare.None))
             {
-                fileStream.Seek(offset, SeekOrigin.Begin);
-                await stream.CopyToAsync(fileStream, cancellationToken);
-                fileLength = fileStream.Length;
+                tempFileStream.Seek(offset, SeekOrigin.Begin);
+                await stream.CopyToAsync(tempFileStream, cancellationToken);
+                tempFileLength = tempFileStream.Length;
             }
 
-            if (fileLength == length)
+            if (tempFileLength == length)
             {
                 var actualPath = GetActualPath(path);
                 File.Move(tempPath, actualPath, false);
                 return new FileStream(actualPath, FileMode.Open, FileAccess.Read, FileShare.None);
             }
-            else if (fileLength > length)
+            else if (tempFileLength > length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), offset, "Offset exceed the expected length.");
             }

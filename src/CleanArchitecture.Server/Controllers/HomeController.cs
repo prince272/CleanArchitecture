@@ -17,7 +17,7 @@ namespace CleanArchitecture.Server.Controllers
         [HttpGet("protected")]
         public IActionResult Protected()
         {
-            return Ok();
+            return Ok(HttpContext.GetTempData());
         }
 
         [AllowAnonymous]

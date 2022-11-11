@@ -44,7 +44,8 @@ var defaltConnectionString = builder.Configuration.GetConnectionString("Default"
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(defaltConnectionString, sqlOptions =>
     {
-        sqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.GetName().Name);
+        var assemblyName = typeof(AppDbContext).Assembly.GetName().Name;
+        sqlOptions.MigrationsAssembly(assemblyName);
     }));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -88,7 +89,19 @@ builder.Services.AddIdentity<User, Role>(options =>
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession();
+
 // Add authentication and authorization services.
+builder.Services.AddAnonymous(options => {
+    options.HttpOnly = true;
+    options.SameSite = SameSiteMode.None;
+    options.Expiration = TimeSpan.FromDays(30);
+    options.SecurePolicy = builder.Environment.IsDevelopment()
+    ? CookieSecurePolicy.SameAsRequest
+    : CookieSecurePolicy.Always;
+});
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -157,15 +170,6 @@ builder.Services.AddAuthentication(options =>
         options.AccessDeniedPath = "/account/access-denied";
     });
 
-builder.Services.AddAnonymous(options => {
-    options.HttpOnly = true;
-    options.SameSite = SameSiteMode.None;
-    options.Expiration = TimeSpan.FromDays(30);
-    options.SecurePolicy = builder.Environment.IsDevelopment()
-    ? CookieSecurePolicy.SameAsRequest
-    : CookieSecurePolicy.Always;
-});
-
 builder.Services.AddAuthorization();
 
 builder.Services.AddRouting(options =>
@@ -226,6 +230,7 @@ builder.Services.AddControllers(options =>
     // source: https://stackoverflow.com/questions/72060349/form-field-is-required-even-if-not-defined-so
     options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
 })
+    .AddSessionStateTempDataProvider()
     .AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
@@ -245,11 +250,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.Domain = null;
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.None;
-    options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
     ? CookieSecurePolicy.SameAsRequest
     : CookieSecurePolicy.Always;
 
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
 
     options.LoginPath = "/authentication/redirect";
@@ -331,6 +336,8 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.UseHttpsRedirection();
 
 app.UseCors();
+
+app.UseSession();
 
 app.UseAnonymous();
 app.UseAuthentication();

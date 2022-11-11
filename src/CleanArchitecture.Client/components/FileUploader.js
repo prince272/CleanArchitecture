@@ -42,6 +42,7 @@ export const FileUploader = (props) => {
                 process: {
                     url: '/media',
                     method: 'POST',
+                    withCredentials: true,
                     headers: (file) => {
                         const headers = {
                             'Upload-Name': file.name,
@@ -57,6 +58,7 @@ export const FileUploader = (props) => {
                 },
                 patch: {
                     url: '',
+                    withCredentials: true,
                     headers: (chunk) => {
                         const headers = {
                             'Content-Type': 'application/offset+octet-stream',
@@ -77,6 +79,7 @@ export const FileUploader = (props) => {
                     // Helper Functions for Making XHR Requests in JavaScript
                     // source: https://gist.github.com/pizzarob/6c9efc583a17c2643505e7d70ffb1e0e
                     let xhr = new XMLHttpRequest();
+                    xhr.withCredentials = true;
                     xhr.open('DELETE', SERVER_URL + path);
                     xhr.setRequestHeader('Content-Type', 'application/offset+octet-stream');
                     if (client.user) { xhr.setRequestHeader(AUTH_HEADER_NAME, `${AUTH_HEADER_PREFIX}${client.user.accessToken}`); }

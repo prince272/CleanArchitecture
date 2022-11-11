@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,10 +7,9 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.Core.Entities
 {
-    public class Media : IEntity
+    [Owned]
+    public class Media
     {
-        public long Id { get; set; }
-
         public string Name { get; set; } = null!;
 
         public int? Width { get; set; }

@@ -8,12 +8,14 @@ using CleanArchitecture.Infrastructure.Extensions.SmsSender;
 using CleanArchitecture.Infrastructure.Extensions.ViewRenderer;
 using CleanArchitecture.Server.Extensions.Authentication;
 using CleanArchitecture.Server.Extensions.Hosting;
+using CleanArchitecture.Server.Utilities;
 using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace CleanArchitecture.Server.Controllers
 {
@@ -22,20 +24,17 @@ namespace CleanArchitecture.Server.Controllers
         private readonly UserManager<User> _userManager;
         private readonly AppSettings _appSettings;
         private readonly IFileStorage _fileStorage;
-        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public MediaController(
             UserManager<User> userManager,
             IOptions<AppSettings> appSettings,
             IFileStorage fileStorage,
-            IUnitOfWork unitOfWork,
             IMapper mapper)
         {
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(appSettings));
             _fileStorage = fileStorage ?? throw new ArgumentNullException(nameof(fileStorage));
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -66,7 +65,7 @@ namespace CleanArchitecture.Server.Controllers
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser == null) throw new InvalidOperationException($"Value cannot be null.");
 
-                var uploadPath = $"/media/{mediaRule.MediaType.ToString().ToLowerInvariant()}/{currentUser.Id}/{Algorithm.CreateCryptographicallySecureGuid()}{uploadExtension}";
+                var uploadPath = $"/media/{mediaRule.MediaType.ToString().Pluralize().ToLowerInvariant()}/{currentUser.Id}/{Algorithm.CreateCryptographicallySecureGuid()}{uploadExtension}";
                 await _fileStorage.PrepareAsync(uploadPath);
                 return Ok(uploadPath);
             }
@@ -87,8 +86,9 @@ namespace CleanArchitecture.Server.Controllers
                     media.MimeType = uploadMimeType;
                     media.Type = mediaRule.MediaType;
 
-                    _unitOfWork.Add(media);
-                    await _unitOfWork.CompleteAsync();
+                    var tempData = HttpContext.GetTempData();
+                    tempData[path] = JsonSerializer.Serialize(media);
+                    tempData.Save();
                 }
 
                 return Ok();
@@ -102,18 +102,7 @@ namespace CleanArchitecture.Server.Controllers
         {
             var path = Request.Path.ToString();
             await _fileStorage.DeleteAsync(path);
-
-            var media = await _unitOfWork.Query<Media>().FirstOrDefaultAsync(_ => _.Path == path);
-            if (media != null)
-            {
-                _unitOfWork.Remove(media);
-                await _unitOfWork.CompleteAsync();
-                return Ok();
-            }
-            else
-            {
-                return NotFound();
-            }
+            return Ok();
         }
     }
 }
