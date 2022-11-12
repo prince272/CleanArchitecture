@@ -93,7 +93,7 @@ namespace CleanArchitecture.Server.Controllers
             user.LastName = form.LastName;
             user.UserName = await Algorithm.GenerateSlugAsync($"{form.FirstName} {form.LastName}".ToLowerInvariant(),
                 "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
-            user.RegisteredOn = DateTimeOffset.UtcNow;
+            user.RegisteredAt = DateTimeOffset.UtcNow;
             user.Guid = Algorithm.CreateCryptographicallySecureGuid();
 
             (await _userManager.CreateAsync(user, form.Password)).ThrowIfFailed();
@@ -496,7 +496,7 @@ namespace CleanArchitecture.Server.Controllers
                     user.LastName = lastName;
                     user.UserName = await Algorithm.GenerateSlugAsync($"{firstName} {lastName}".ToLowerInvariant(),
                                  "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
-                    user.RegisteredOn = DateTimeOffset.UtcNow;
+                    user.RegisteredAt = DateTimeOffset.UtcNow;
                     user.Guid = Algorithm.CreateCryptographicallySecureGuid();
 
                     (await _userManager.CreateAsync(user, Guid.NewGuid().ToString())).ThrowIfFailed();

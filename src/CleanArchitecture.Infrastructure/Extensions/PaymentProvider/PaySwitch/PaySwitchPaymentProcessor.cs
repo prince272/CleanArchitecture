@@ -110,7 +110,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
                         payment.Status = PaymentStatus.Processing;
                         payment.IPAddress = GetCurrntIPAddress();
                         payment.UAString = GetCurrentUAString();
-                        payment.UpdatedOn = DateTimeOffset.UtcNow;
+                        payment.UpdatedAt = DateTimeOffset.UtcNow;
                         _unitOfWork.Update(payment);
                         await _unitOfWork.CompleteAsync();
 
@@ -139,11 +139,11 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
 
             if (payment.Status == PaymentStatus.Pending || payment.Status == PaymentStatus.Processing)
             {
-                if ((DateTimeOffset.UtcNow - payment.UpdatedOn) > TimeSpan.FromMinutes(3))
+                if ((DateTimeOffset.UtcNow - payment.UpdatedAt) > TimeSpan.FromMinutes(3))
                 {
                     payment.Status = PaymentStatus.Expired;
-                    payment.ExpiredOn = DateTimeOffset.UtcNow;
-                    payment.UpdatedOn = DateTimeOffset.UtcNow;
+                    payment.ExpiredAt = DateTimeOffset.UtcNow;
+                    payment.UpdatedAt = DateTimeOffset.UtcNow;
                     _unitOfWork.Update(payment);
                     await _unitOfWork.CompleteAsync();
                 }
@@ -159,16 +159,16 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
                         if (responseData.GetValueOrDefault("code") == "000")
                         {
                             payment.Status = PaymentStatus.Completed;
-                            payment.CompletedOn = DateTimeOffset.UtcNow;
-                            payment.UpdatedOn = DateTimeOffset.UtcNow;
+                            payment.CompletedAt = DateTimeOffset.UtcNow;
+                            payment.UpdatedAt = DateTimeOffset.UtcNow;
                             _unitOfWork.Update(payment);
                             await _unitOfWork.CompleteAsync();
                         }
                         else if (responseData.GetValueOrDefault("code") == "104")
                         {
                             payment.Status = PaymentStatus.Declined;
-                            payment.DeclinedOn = DateTimeOffset.UtcNow;
-                            payment.UpdatedOn = DateTimeOffset.UtcNow;
+                            payment.DeclinedAt = DateTimeOffset.UtcNow;
+                            payment.UpdatedAt = DateTimeOffset.UtcNow;
                             _unitOfWork.Update(payment);
                             await _unitOfWork.CompleteAsync();
                         }

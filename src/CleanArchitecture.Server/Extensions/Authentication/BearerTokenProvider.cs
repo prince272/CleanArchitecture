@@ -71,8 +71,8 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 AccessTokenHash = Algorithm.GenerateHash(accessToken),
                 RefreshTokenHash = Algorithm.GenerateHash(refreshToken),
 
-                AccessTokenExpiresOn = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
-                RefreshTokenExpiresOn = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
+                AccessTokenExpiresAt = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
+                RefreshTokenExpiresAt = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
             });
             await _unitOfWork.CompleteAsync();
 
@@ -112,8 +112,8 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 AccessTokenHash = Algorithm.GenerateHash(accessToken),
                 RefreshTokenHash = Algorithm.GenerateHash(refreshToken),
 
-                AccessTokenExpiresOn = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
-                RefreshTokenExpiresOn = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
+                AccessTokenExpiresAt = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
+                RefreshTokenExpiresAt = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
             });
             await _unitOfWork.CompleteAsync();
 
@@ -278,7 +278,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
         private async Task RemoveExpiredTokensByUserIdAsync(long userId)
         {
             var now = DateTimeOffset.UtcNow;
-            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.UserId == userId && bt.RefreshTokenExpiresOn < now).ToArrayAsync();
+            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.UserId == userId && bt.RefreshTokenExpiresAt < now).ToArrayAsync();
             _unitOfWork.Remove(bearerTokens);
         }
 
@@ -290,7 +290,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             var accessTokenHash = Algorithm.GenerateHash(accessToken);
             var bearerToken = await _unitOfWork.Query<BearerToken>().FirstOrDefaultAsync(
                 bt => bt.AccessTokenHash == accessTokenHash && bt.UserId == userId);
-            return bearerToken?.AccessTokenExpiresOn >= DateTimeOffset.UtcNow;
+            return bearerToken?.AccessTokenExpiresAt >= DateTimeOffset.UtcNow;
         }
 
         public async Task ValidateTokenContextAsync(TokenValidatedContext context)

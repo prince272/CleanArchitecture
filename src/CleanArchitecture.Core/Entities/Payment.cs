@@ -19,17 +19,17 @@ namespace CleanArchitecture.Core.Entities
 
         public PaymentStatus Status { get; set; }
 
-        public DateTimeOffset CreatedOn { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
-        public DateTimeOffset? UpdatedOn { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
 
         public long? UserId { get; set; }
 
-        public DateTimeOffset? CompletedOn { get; set; }
+        public DateTimeOffset? CompletedAt { get; set; }
 
-        public DateTimeOffset? ExpiredOn { get; set; }
+        public DateTimeOffset? ExpiredAt { get; set; }
 
-        public DateTimeOffset? DeclinedOn { get; set; }
+        public DateTimeOffset? DeclinedAt { get; set; }
 
         public PaymentMethod? Method { get; set; }
 
@@ -60,12 +60,12 @@ namespace CleanArchitecture.Core.Entities
                 Amount = Amount,
                 Type = Type,
                 Status = PaymentStatus.Pending,
-                CreatedOn = DateTimeOffset.UtcNow,
-                UpdatedOn = null,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = null,
                 UserId = UserId,
-                CompletedOn = null,
-                ExpiredOn = null,
-                DeclinedOn = null,
+                CompletedAt = null,
+                ExpiredAt = null,
+                DeclinedAt = null,
                 Method = null,
                 Gateway = null,
                 TransactionId = null,

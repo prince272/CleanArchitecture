@@ -14,7 +14,7 @@ namespace CleanArchitecture.Core.Validators
         {
             RuleFor(entity => entity.FirstName).NotEmpty();
             RuleFor(entity => entity.LastName).NotEmpty();
-            RuleFor(entity => entity.RegisteredOn).NotEmpty();
+            RuleFor(entity => entity.RegisteredAt).NotEmpty();
         }
     }
 }
