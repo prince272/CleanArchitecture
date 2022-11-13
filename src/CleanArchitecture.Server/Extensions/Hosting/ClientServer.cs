@@ -34,7 +34,7 @@ namespace CleanArchitecture.Server.Extensions.Hosting
 
         public bool IsClientUrl(string url)
         {
-            if (ClientUrls.Any(clientUrl => Uri.Compare(new Uri(clientUrl), new Uri(url), UriComponents.SchemeAndServer, UriFormat.UriEscaped, StringComparison.InvariantCultureIgnoreCase) == 0)) 
+            if (ClientUrls.Any(clientUrl => Uri.Compare(new Uri(clientUrl), new Uri(url), UriComponents.SchemeAndServer, UriFormat.UriEscaped, StringComparison.InvariantCultureIgnoreCase) == 0))
                 return true;
 
             return false;

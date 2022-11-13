@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace CleanArchitecture.Core.Utilities
+﻿namespace CleanArchitecture.Core.Utilities
 {
     /// <summary>
     /// Dictionary extensions.

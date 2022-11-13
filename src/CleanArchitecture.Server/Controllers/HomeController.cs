@@ -1,13 +1,8 @@
-﻿using CleanArchitecture.Core.Utilities;
-using CleanArchitecture.Server.Utilities;
+﻿using CleanArchitecture.Server.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Options;
-using System.Text.Json;
 
 namespace CleanArchitecture.Server.Controllers
 {

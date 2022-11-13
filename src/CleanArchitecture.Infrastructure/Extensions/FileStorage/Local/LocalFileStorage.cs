@@ -1,16 +1,11 @@
 ﻿using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
 {
     public class LocalFileStorage : IFileStorage
     {
         private readonly LocalFileStorageOptions _localFileStorageOptions;
+
 
         public LocalFileStorage(IOptions<LocalFileStorageOptions> localFileStorageOptions)
         {
@@ -21,8 +16,8 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            var tempPath = GetTempPath(path);
-            using var fileStream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            var tempFilePath = GetTempFilePath(path);
+            using var fileStream = new FileStream(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             return Task.CompletedTask;
         }
 
@@ -32,8 +27,8 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
             if (stream == null) throw new ArgumentNullException(nameof(stream));
 
             long tempFileLength = 0;
-            var tempPath = GetTempPath(path);
-            using (var tempFileStream = new FileStream(tempPath, FileMode.Open, FileAccess.Write, FileShare.None))
+            var tempFilePath = GetTempFilePath(path);
+            using (var tempFileStream = new FileStream(tempFilePath, FileMode.Open, FileAccess.Write, FileShare.None))
             {
                 tempFileStream.Seek(offset, SeekOrigin.Begin);
                 await stream.CopyToAsync(tempFileStream, cancellationToken);
@@ -42,9 +37,9 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
 
             if (tempFileLength == length)
             {
-                var actualPath = GetActualPath(path);
-                File.Move(tempPath, actualPath, false);
-                return new FileStream(actualPath, FileMode.Open, FileAccess.Read, FileShare.None);
+                var actualFilePath = GetActualFilePath(path);
+                File.Move(tempFilePath, actualFilePath, false);
+                return new FileStream(actualFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
             }
             else if (tempFileLength > length)
             {
@@ -58,26 +53,39 @@ namespace CleanArchitecture.Infrastructure.Extensions.FileStorage.Local
 
         public Task DeleteAsync(string path, CancellationToken cancellationToken = default)
         {
-            var tempPath = GetTempPath(path);
+            if (path == null) throw new ArgumentNullException(nameof(path));
 
-            if (File.Exists(tempPath))
-                File.Delete(tempPath);
+            var tempFilePath = GetTempFilePath(path);
 
-            var actualPath = GetActualPath(path);
+            if (File.Exists(tempFilePath))
+                File.Delete(tempFilePath);
 
-            if (File.Exists(actualPath))
-                File.Delete(actualPath);
+            var actualFilePath = GetActualFilePath(path);
+
+            if (File.Exists(actualFilePath))
+                File.Delete(actualFilePath);
 
             return Task.CompletedTask;
         }
 
-        string GetTempPath(string path)
+        public string GetUrl(string path)
         {
-            return $"{GetActualPath(path)}.temp";
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            return $"{_localFileStorageOptions.RootUrl}{path.Replace("\\", "/")}";
         }
 
-        string GetActualPath(string path)
+        string GetTempFilePath(string path)
         {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            return $"{GetActualFilePath(path)}.temp";
+        }
+
+        string GetActualFilePath(string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
             path = $"{_localFileStorageOptions.RootPath}{path.Replace("/", "\\")}";
             string sourceDirectory = Path.GetDirectoryName(path)!;
 

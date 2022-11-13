@@ -1,8 +1,4 @@
-﻿using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CleanArchitecture.Core.Utilities
+﻿namespace CleanArchitecture.Core.Utilities
 {
     public static class StreamExtensions
     {

@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
+﻿using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Core.Utilities
 {
     public static class Algorithm
     {
-        public static async Task<string> GenerateSlugAsync(string text, string separator, Func<string, Task<bool>> exists)
+        public static async Task<string> GenerateSlugAsync(string text, Func<string, Task<bool>> exists, string separator = "-")
         {
             if (text == null)
                 throw new ArgumentNullException(nameof(text));
@@ -34,7 +29,7 @@ namespace CleanArchitecture.Core.Utilities
 
         // URL Slugify algorithm in C#?
         // source: https://stackoverflow.com/questions/2920744/url-slugify-algorithm-in-c/2921135#2921135
-        public static string GenerateSlug(string input, string separator)
+        public static string GenerateSlug(string input, string separator = "-")
         {
             if (input == null)
                 throw new ArgumentNullException(nameof(input));

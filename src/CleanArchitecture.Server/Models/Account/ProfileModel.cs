@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using CleanArchitecture.Core.Entities;
+using CleanArchitecture.Infrastructure.Entities;
 using CleanArchitecture.Server.Extensions.Authentication;
 
 namespace CleanArchitecture.Server.Models.Account
 {
     public class ProfileModel
     {
-        public long Id { get; set; }    
+        public long Id { get; set; }
 
         public string FirstName { get; set; } = null!;
 

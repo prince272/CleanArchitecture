@@ -1,24 +1,13 @@
-﻿using CleanArchitecture.Core;
-using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Utilities;
+﻿using CleanArchitecture.Core.Utilities;
 using CleanArchitecture.Infrastructure.Data;
-using Humanizer;
+using CleanArchitecture.Infrastructure.Entities;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Net.Mime;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
 {
@@ -27,14 +16,14 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
         private readonly PaySwitchPaymentProcessorOptions _paySwitchPaymentMethodOptions;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly AppDbContext _appDbContext;
 
-        public PaySwitchPaymentProcessor(IOptions<PaySwitchPaymentProcessorOptions> paySwitchPaymentMethodOptions, IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+        public PaySwitchPaymentProcessor(IOptions<PaySwitchPaymentProcessorOptions> paySwitchPaymentMethodOptions, IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor, AppDbContext appDbContext)
         {
             _paySwitchPaymentMethodOptions = paySwitchPaymentMethodOptions.Value ?? throw new ArgumentNullException(nameof(paySwitchPaymentMethodOptions));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpClientFactory));
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _appDbContext = appDbContext ?? throw new ArgumentNullException(nameof(appDbContext));
         }
 
         private HttpClient CreateHttpClient()
@@ -111,8 +100,8 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
                         payment.IPAddress = GetCurrntIPAddress();
                         payment.UAString = GetCurrentUAString();
                         payment.UpdatedAt = DateTimeOffset.UtcNow;
-                        _unitOfWork.Update(payment);
-                        await _unitOfWork.CompleteAsync();
+                        _appDbContext.Update(payment);
+                        await _appDbContext.SaveChangesAsync();
 
                         return PaymentResult.Succeeded();
                     }
@@ -144,8 +133,8 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
                     payment.Status = PaymentStatus.Expired;
                     payment.ExpiredAt = DateTimeOffset.UtcNow;
                     payment.UpdatedAt = DateTimeOffset.UtcNow;
-                    _unitOfWork.Update(payment);
-                    await _unitOfWork.CompleteAsync();
+                    _appDbContext.Update(payment);
+                    await _appDbContext.SaveChangesAsync();
                 }
                 else
                 {
@@ -161,16 +150,16 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch
                             payment.Status = PaymentStatus.Completed;
                             payment.CompletedAt = DateTimeOffset.UtcNow;
                             payment.UpdatedAt = DateTimeOffset.UtcNow;
-                            _unitOfWork.Update(payment);
-                            await _unitOfWork.CompleteAsync();
+                            _appDbContext.Update(payment);
+                            await _appDbContext.SaveChangesAsync();
                         }
                         else if (responseData.GetValueOrDefault("code") == "104")
                         {
                             payment.Status = PaymentStatus.Declined;
                             payment.DeclinedAt = DateTimeOffset.UtcNow;
                             payment.UpdatedAt = DateTimeOffset.UtcNow;
-                            _unitOfWork.Update(payment);
-                            await _unitOfWork.CompleteAsync();
+                            _appDbContext.Update(payment);
+                            await _appDbContext.SaveChangesAsync();
                         }
                     }
                 }

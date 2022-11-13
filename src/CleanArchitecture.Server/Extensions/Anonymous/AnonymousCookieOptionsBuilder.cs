@@ -1,7 +1,5 @@
 ﻿#nullable disable
 
-using Microsoft.AspNetCore.Http;
-using System;
 
 namespace CleanArchitecture.Server.Extensions.Anonymous
 {

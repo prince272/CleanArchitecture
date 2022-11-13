@@ -1,6 +1,5 @@
 ﻿#nullable disable
 
-using System;
 
 namespace CleanArchitecture.Server.Extensions.Anonymous
 {

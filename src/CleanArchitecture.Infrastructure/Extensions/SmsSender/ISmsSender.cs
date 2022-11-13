@@ -1,7 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-
-namespace CleanArchitecture.Infrastructure.Extensions.SmsSender
+﻿namespace CleanArchitecture.Infrastructure.Extensions.SmsSender
 {
     public interface ISmsSender
     {

@@ -2,7 +2,7 @@
 {
     public interface IClientServer
     {
-        string[] ServerUrls { get;  }
+        string[] ServerUrls { get; }
 
         string[] ClientUrls { get; }
 

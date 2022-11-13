@@ -1,13 +1,7 @@
 ﻿using AutoMapper;
-using CleanArchitecture.Core;
-using CleanArchitecture.Core.Entities;
 using CleanArchitecture.Core.Utilities;
-using CleanArchitecture.Infrastructure.Extensions.EmailSender;
+using CleanArchitecture.Infrastructure.Entities;
 using CleanArchitecture.Infrastructure.Extensions.FileStorage;
-using CleanArchitecture.Infrastructure.Extensions.SmsSender;
-using CleanArchitecture.Infrastructure.Extensions.ViewRenderer;
-using CleanArchitecture.Server.Extensions.Authentication;
-using CleanArchitecture.Server.Extensions.Hosting;
 using CleanArchitecture.Server.Utilities;
 using Humanizer;
 using Microsoft.AspNetCore.Authorization;
@@ -45,7 +39,7 @@ namespace CleanArchitecture.Server.Controllers
             var uploadName = Request.Headers["Upload-Name"].ToString();
             var uploadLength = Request.Headers["Upload-Length"].To<long>();
             var uploadExtension = Path.GetExtension(uploadName).ToLowerInvariant();
-            var uploadMimeType = MimeTypeMap.GetMimeType(uploadName);
+            var uploadMimeType = MimeTypeHelper.GetMimeType(uploadName);
 
             var fileExtensions = _appSettings.MediaSettings.Rules.SelectMany(_ => _.Value.FileExtensions).ToArray();
             var acceptedFileExtensions = (Request.Headers.GetCommaSeparatedValues("Accept-File-Extensions") ?? Array.Empty<string>());

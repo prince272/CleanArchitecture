@@ -12,7 +12,7 @@ namespace CleanArchitecture.Server.Models.Account
     public class SendVerifyAccountForm : IVerifyAccountForm
     {
         public SendVerifyAccountForm()
-        {     
+        {
         }
 
         public string Username { get; set; } = null!;

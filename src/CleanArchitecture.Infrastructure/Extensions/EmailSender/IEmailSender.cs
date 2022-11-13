@@ -1,7 +1,4 @@
-﻿using System.Net.Mail;
-using System.Threading.Tasks;
-
-namespace CleanArchitecture.Infrastructure.Extensions.EmailSender
+﻿namespace CleanArchitecture.Infrastructure.Extensions.EmailSender
 {
     public interface IEmailSender
     {

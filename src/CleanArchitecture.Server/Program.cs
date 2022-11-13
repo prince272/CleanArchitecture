@@ -1,33 +1,32 @@
-using CleanArchitecture.Core;
-using CleanArchitecture.Core.Entities;
 using CleanArchitecture.Infrastructure.Data;
+using CleanArchitecture.Infrastructure.Entities;
+using CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit;
+using CleanArchitecture.Infrastructure.Extensions.FileStorage.Local;
+using CleanArchitecture.Infrastructure.Extensions.PaymentProvider;
+using CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch;
+using CleanArchitecture.Infrastructure.Extensions.SmsSender.Twilio;
+using CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor;
+using CleanArchitecture.Infrastructure.Services.Store;
 using CleanArchitecture.Server;
+using CleanArchitecture.Server.Extensions.Anonymous;
+using CleanArchitecture.Server.Extensions.Authentication;
+using CleanArchitecture.Server.Extensions.Hosting;
+using CleanArchitecture.Server.Utilities;
+using FluentValidation;
 using FluentValidation.AspNetCore;
+using Humanizer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Humanizer;
-using FluentValidation;
-using CleanArchitecture.Server.Extensions.Hosting;
-using CleanArchitecture.Server.Extensions.Authentication;
-using CleanArchitecture.Server.Extensions.Anonymous;
-using CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit;
-using CleanArchitecture.Infrastructure.Extensions.FileStorage.Local;
-using CleanArchitecture.Infrastructure.Extensions.ViewRenderer.Razor;
-using CleanArchitecture.Infrastructure.Extensions.SmsSender.Twilio;
-using CleanArchitecture.Infrastructure.Extensions.PaymentProvider.PaySwitch;
-using CleanArchitecture.Infrastructure.Extensions.PaymentProvider;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using CleanArchitecture.Server.Utilities;
-using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,7 +47,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         sqlOptions.MigrationsAssembly(assemblyName);
     }));
 
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Add identity services.
 builder.Services.AddIdentity<User, Role>(options =>
@@ -89,11 +87,14 @@ builder.Services.AddIdentity<User, Role>(options =>
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddScoped<ProductService>();
+
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
 
 // Add authentication and authorization services.
-builder.Services.AddAnonymous(options => {
+builder.Services.AddAnonymous(options =>
+{
     options.HttpOnly = true;
     options.SameSite = SameSiteMode.None;
     options.Expiration = TimeSpan.FromDays(30);
@@ -204,20 +205,23 @@ builder.Services.AddMailKitEmailSender(options =>
 
 builder.Services.AddSmsSender(options => { });
 
-builder.Services.AddClientServer(options => {
-    options.ClientUrls = builder.Configuration.GetSection("ClientUrls").Get<string[]>(); 
+builder.Services.AddClientServer(options =>
+{
+    options.ClientUrls = builder.Configuration.GetSection("ClientUrls").Get<string[]>();
 });
 
 builder.Services.AddLocalFileStorage(options =>
 {
-    options.RootPath = builder.Environment.WebRootPath;
+    options.RootPath = builder.Environment.ContentRootPath;
+    options.RootUrl = builder.Environment.WebRootPath;
 });
 
 builder.Services.AddPaymentProvider()
-                .AddPaySwitchProcessor(options => {
+                .AddPaySwitchProcessor(options =>
+                {
                     options.ClientId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientId");
                     options.ClientSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientSecret");
-                    
+
                     options.MerchantId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantId");
                     options.MerchantSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantSecret");
                 });
@@ -312,9 +316,13 @@ builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddRazorViewRenderer((options) => {
+builder.Services.AddRazorViewRenderer((options) =>
+{
     options.RootPathFormat = "/Views/Templates/{0}";
 });
+
+
+builder.Services.AddScoped<ProductService>();
 
 var app = builder.Build();
 

@@ -1,7 +1,6 @@
 ﻿#nullable disable
 
 using Microsoft.IdentityModel.Tokens;
-using System;
 using System.Text;
 
 namespace CleanArchitecture.Server.Extensions.Anonymous

@@ -1,14 +1,9 @@
-﻿using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Utilities;
+﻿using CleanArchitecture.Core.Utilities;
+using CleanArchitecture.Infrastructure.Entities;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Server.Extensions.Authentication
 {
@@ -18,19 +13,19 @@ namespace CleanArchitecture.Server.Extensions.Authentication
         {
             User? user = null;
 
-            switch (ContactHelper.GetContactType(username))
+            switch (ContactTypeHelper.GetContactType(username))
             {
                 case ContactType.EmailAddress:
                     {
-                        var emailAddress = ContactHelper.ParseEmailAddress(username).Address;
+                        var emailAddress = ContactTypeHelper.ParseEmailAddress(username).Address;
                         user = await userManager.FindByEmailAsync(emailAddress);
                     }
                     break;
                 case ContactType.PhoneNumber:
                     {
-                        var phoneNumber = ContactHelper.ParsePhoneNumber(username).Number;
+                        var phoneNumber = ContactTypeHelper.ParsePhoneNumber(username).Number;
                         user = await userManager.Users.SingleOrDefaultAsync(user => user.PhoneNumber == phoneNumber);
-                    }; 
+                    };
                     break;
                 default: throw new InvalidOperationException();
             }

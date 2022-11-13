@@ -1,13 +1,7 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using System;
-using MailAddress = System.Net.Mail.MailAddress;
-using System.Threading.Tasks;
-using System.Text;
-using System.IO;
 
 namespace CleanArchitecture.Infrastructure.Extensions.EmailSender.MailKit
 {

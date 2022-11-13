@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
-using CleanArchitecture.Core;
-using CleanArchitecture.Core.Entities;
 using CleanArchitecture.Core.Utilities;
+using CleanArchitecture.Infrastructure.Entities;
 using CleanArchitecture.Infrastructure.Extensions.EmailSender;
 using CleanArchitecture.Infrastructure.Extensions.FileStorage;
 using CleanArchitecture.Infrastructure.Extensions.SmsSender;
@@ -32,7 +31,6 @@ namespace CleanArchitecture.Server.Controllers
         private readonly IViewRenderer _viewRenderer;
         private readonly IClientServer _clientServer;
         private readonly IFileStorage _fileStorage;
-        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public AccountController(
@@ -45,8 +43,7 @@ namespace CleanArchitecture.Server.Controllers
             IOptions<AppSettings> appSettings,
             IViewRenderer viewRenderer,
             IClientServer clientServer,
-            IFileStorage fileStorage, 
-            IUnitOfWork unitOfWork,
+            IFileStorage fileStorage,
             IMapper mapper)
         {
             _bearerTokenProvider = bearerTokenProvider ?? throw new ArgumentNullException(nameof(bearerTokenProvider));
@@ -59,7 +56,6 @@ namespace CleanArchitecture.Server.Controllers
             _viewRenderer = viewRenderer ?? throw new ArgumentNullException(nameof(viewRenderer));
             _clientServer = clientServer ?? throw new ArgumentNullException(nameof(viewRenderer));
             _fileStorage = fileStorage ?? throw new ArgumentNullException(nameof(fileStorage));
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -76,23 +72,23 @@ namespace CleanArchitecture.Server.Controllers
             if (user != null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is already registered.");
+                errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' is already registered.");
                 return ValidationProblem(errors);
             }
 
             user = new User();
-            var formUsernameType = ContactHelper.GetContactType(form.Username);
+            var formUsernameType = ContactTypeHelper.GetContactType(form.Username);
 
             switch (formUsernameType)
             {
-                case ContactType.EmailAddress: user.Email = ContactHelper.ParseEmailAddress(form.Username).Address; break;
-                case ContactType.PhoneNumber: user.PhoneNumber = ContactHelper.ParsePhoneNumber(form.Username).Number; break;
+                case ContactType.EmailAddress: user.Email = ContactTypeHelper.ParseEmailAddress(form.Username).Address; break;
+                case ContactType.PhoneNumber: user.PhoneNumber = ContactTypeHelper.ParsePhoneNumber(form.Username).Number; break;
                 default: throw new InvalidOperationException();
             }
             user.FirstName = form.FirstName;
             user.LastName = form.LastName;
             user.UserName = await Algorithm.GenerateSlugAsync($"{form.FirstName} {form.LastName}".ToLowerInvariant(),
-                "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
+                userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
             user.RegisteredAt = DateTimeOffset.UtcNow;
             user.Guid = Algorithm.CreateCryptographicallySecureGuid();
 
@@ -132,7 +128,7 @@ namespace CleanArchitecture.Server.Controllers
                 if (user != null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is already registered.");
+                    errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' is already registered.");
                     return ValidationProblem(errors);
                 }
 
@@ -145,19 +141,19 @@ namespace CleanArchitecture.Server.Controllers
                 if (user == null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
+                    errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                     return ValidationProblem(errors);
                 }
             }
             else throw new InvalidOperationException();
 
-            var formUsernameType = ContactHelper.GetContactType(form.Username);
+            var formUsernameType = ContactTypeHelper.GetContactType(form.Username);
 
             switch (formUsernameType)
             {
                 case ContactType.EmailAddress:
                     {
-                        var formEmailAdress = ContactHelper.ParseEmailAddress(form.Username).Address;
+                        var formEmailAdress = ContactTypeHelper.ParseEmailAddress(form.Username).Address;
                         ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangeEmailTokenAsync(user, formEmailAdress);
 
                         var message = new
@@ -173,13 +169,13 @@ namespace CleanArchitecture.Server.Controllers
                     break;
                 case ContactType.PhoneNumber:
                     {
-                        var formPhoneNumber = ContactHelper.ParsePhoneNumber(form.Username).Number;
+                        var formPhoneNumber = ContactTypeHelper.ParsePhoneNumber(form.Username).Number;
                         ((IVerifyAccountForm)form).Code = await _userManager.GenerateChangePhoneNumberTokenAsync(user, formPhoneNumber);
 
                         var message = new
                         {
                             To = formPhoneNumber,
-                            Body = HtmlHelper.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/VerifyAccount", (user, (IVerifyAccountForm)form, formUsernameType)))
+                            Body = Sanitizer.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/VerifyAccount", (user, (IVerifyAccountForm)form, formUsernameType)))
                         };
 
                         await _smsSender.SendAsync(message.To, message.Body);
@@ -212,7 +208,7 @@ namespace CleanArchitecture.Server.Controllers
                 if (user != null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is already registered.");
+                    errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' is already registered.");
                     return ValidationProblem(errors);
                 }
 
@@ -225,7 +221,7 @@ namespace CleanArchitecture.Server.Controllers
                 if (user == null)
                 {
                     var errors = new Dictionary<string, string[]>();
-                    errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
+                    errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                     return ValidationProblem(errors);
                 }
             }
@@ -233,7 +229,7 @@ namespace CleanArchitecture.Server.Controllers
 
             var result = default(IdentityResult);
 
-            var formUsernameType = ContactHelper.GetContactType(form.Username);
+            var formUsernameType = ContactTypeHelper.GetContactType(form.Username);
 
             switch (formUsernameType)
             {
@@ -267,17 +263,17 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
+                errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                 return ValidationProblem(errors);
             }
 
-            var formUsernameType = ContactHelper.GetContactType(form.Username);
+            var formUsernameType = ContactTypeHelper.GetContactType(form.Username);
 
             switch (formUsernameType)
             {
                 case ContactType.EmailAddress:
                     {
-                        var formEmailAddress = ContactHelper.ParseEmailAddress(form.Username).Address;
+                        var formEmailAddress = ContactTypeHelper.ParseEmailAddress(form.Username).Address;
                         ((IResetPasswordForm)form).Code = await _userManager.GeneratePasswordResetTokenAsync(user);
 
                         var message = new
@@ -293,13 +289,13 @@ namespace CleanArchitecture.Server.Controllers
                     break;
                 case ContactType.PhoneNumber:
                     {
-                        var formPhoneNumber = ContactHelper.ParsePhoneNumber(form.Username).Number;
+                        var formPhoneNumber = ContactTypeHelper.ParsePhoneNumber(form.Username).Number;
                         ((IResetPasswordForm)form).Code = await _userManager.GeneratePasswordResetTokenAsync(user);
 
                         var message = new
                         {
                             To = formPhoneNumber,
-                            Body = HtmlHelper.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/ResetPassword", (user, (IResetPasswordForm)form)))
+                            Body = Sanitizer.StripHtml(await _viewRenderer.RenderToStringAsync("Sms/ResetPassword", (user, (IResetPasswordForm)form)))
                         };
 
                         await _smsSender.SendAsync(message.To, message.Body);
@@ -324,7 +320,7 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
+                errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                 return ValidationProblem(errors);
             }
 
@@ -351,7 +347,7 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' does not exist.");
+                errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' does not exist.");
                 return ValidationProblem(errors);
             }
 
@@ -428,21 +424,21 @@ namespace CleanArchitecture.Server.Controllers
             if (user == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is not registered.");
+                errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' is not registered.");
                 return ValidationProblem(errors);
             }
 
             if (!await _userManager.CheckPasswordAsync(user, form.Password))
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Password, $"'{ContactHelper.GetContactType(form.Password).Humanize()}' is not correct.");
+                errors.Add(() => form.Password, $"'{ContactTypeHelper.GetContactType(form.Password).Humanize()}' is not correct.");
                 return ValidationProblem(errors);
             }
 
             if (!user.EmailConfirmed && !user.PhoneNumberConfirmed)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.Username, $"'{ContactHelper.GetContactType(form.Username).Humanize()}' is not confirmed.");
+                errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' is not confirmed.");
                 return ValidationProblem(errors, extensions: new Dictionary<string, object?>()
                 {
                     ["Reason"] = SignInReason.RequiresVerification,
@@ -495,7 +491,7 @@ namespace CleanArchitecture.Server.Controllers
                     user.FirstName = firstName;
                     user.LastName = lastName;
                     user.UserName = await Algorithm.GenerateSlugAsync($"{firstName} {lastName}".ToLowerInvariant(),
-                                 "_", userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
+                        userName => _userManager.Users.AnyAsync(_ => _.UserName == userName));
                     user.RegisteredAt = DateTimeOffset.UtcNow;
                     user.Guid = Algorithm.CreateCryptographicallySecureGuid();
 
@@ -539,7 +535,7 @@ namespace CleanArchitecture.Server.Controllers
             if (token == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.RefreshToken, $"'{ContactHelper.GetContactType(form.RefreshToken).Humanize()}' is not valid.");
+                errors.Add(() => form.RefreshToken, $"'{ContactTypeHelper.GetContactType(form.RefreshToken).Humanize()}' is not valid.");
                 return ValidationProblem(errors);
             }
 
@@ -561,7 +557,7 @@ namespace CleanArchitecture.Server.Controllers
             if (token == null)
             {
                 var errors = new Dictionary<string, string[]>();
-                errors.Add(() => form.RefreshToken, $"'{ContactHelper.GetContactType(form.RefreshToken).Humanize()}' is not valid.");
+                errors.Add(() => form.RefreshToken, $"'{ContactTypeHelper.GetContactType(form.RefreshToken).Humanize()}' is not valid.");
                 return ValidationProblem(errors);
             }
 

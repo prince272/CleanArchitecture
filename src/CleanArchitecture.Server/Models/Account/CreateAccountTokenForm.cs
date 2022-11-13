@@ -1,4 +1,4 @@
-﻿using CleanArchitecture.Core.Entities;
+﻿using CleanArchitecture.Infrastructure.Entities;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 

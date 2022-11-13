@@ -1,8 +1,5 @@
 ﻿#nullable disable
 
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace CleanArchitecture.Server.Extensions.Anonymous
 {

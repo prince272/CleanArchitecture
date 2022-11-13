@@ -1,21 +1,16 @@
-﻿using CleanArchitecture.Core;
-using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Utilities;
+﻿using CleanArchitecture.Core.Utilities;
+using CleanArchitecture.Infrastructure.Data;
+using CleanArchitecture.Infrastructure.Entities;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Server.Extensions.Authentication
 {
@@ -26,7 +21,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
         private readonly IOptionsSnapshot<BearerTokenOptions> _bearerTokenOptions;
         private readonly ILogger<BearerTokenProvider> _logger;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly AppDbContext _appDbContext;
         private readonly UserManager<User> _userManager;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IAntiforgery _antiforgery;
@@ -35,7 +30,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
         public BearerTokenProvider(
             IOptionsSnapshot<BearerTokenOptions> authenticationOptions,
             ILogger<BearerTokenProvider> logger,
-            IUnitOfWork unitOfWork,
+            AppDbContext appDbContext,
             UserManager<User> userManager,
             IHttpContextAccessor contextAccessor,
             IAntiforgery antiforgery,
@@ -43,7 +38,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
         {
             _bearerTokenOptions = authenticationOptions ?? throw new ArgumentNullException(nameof(authenticationOptions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _appDbContext = appDbContext ?? throw new ArgumentNullException(nameof(appDbContext));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
             _antiforgery = antiforgery ?? throw new ArgumentNullException(nameof(antiforgery));
@@ -64,7 +59,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             var (accessToken, claims) = await GenerateAccessTokenAsync(now, user);
             var refreshToken = GenerateRefreshToken(now);
 
-            _unitOfWork.Add(new BearerToken
+            _appDbContext.Add(new BearerToken
             {
                 UserId = user.Id,
 
@@ -74,7 +69,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 AccessTokenExpiresAt = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
                 RefreshTokenExpiresAt = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
             });
-            await _unitOfWork.CompleteAsync();
+            await _appDbContext.SaveChangesAsync();
 
             RegenerateAntiForgeryCookies(claims);
 
@@ -105,7 +100,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             var now = DateTimeOffset.UtcNow;
             var (accessToken, claims) = await GenerateAccessTokenAsync(now, token.User);
             var refreshToken = GenerateRefreshToken(now);
-            _unitOfWork.Add(new BearerToken
+            _appDbContext.Add(new BearerToken
             {
                 UserId = token.UserId,
 
@@ -115,7 +110,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 AccessTokenExpiresAt = now.Add(_bearerTokenOptions.Value.AccessTokenExpiresIn),
                 RefreshTokenExpiresAt = now.Add(_bearerTokenOptions.Value.RefeshTokenExpiresIn)
             });
-            await _unitOfWork.CompleteAsync();
+            await _appDbContext.SaveChangesAsync();
 
             RegenerateAntiForgeryCookies(claims);
 
@@ -142,7 +137,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 await RemoveTokensByUserIdAsync(token.UserId);
 
             await RemoveTokensWithSameRefreshTokenAsync(token.RefreshTokenHash);
-            await _unitOfWork.CompleteAsync();
+            await _appDbContext.SaveChangesAsync();
 
             DeleteAntiForgeryCookies();
         }
@@ -153,7 +148,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 throw new ArgumentNullException(nameof(refreshToken));
 
             var refreshTokenHash = Algorithm.GenerateHash(refreshToken);
-            return _unitOfWork.Query<BearerToken>().Include(bt => bt.User).FirstOrDefaultAsync(bt => bt.RefreshTokenHash == refreshTokenHash);
+            return _appDbContext.Set<BearerToken>().Include(bt => bt.User).FirstOrDefaultAsync(bt => bt.RefreshTokenHash == refreshTokenHash);
         }
 
         private async Task<(string AccessToken, IEnumerable<Claim> Claims)> GenerateAccessTokenAsync(DateTimeOffset now, User user)
@@ -262,8 +257,8 @@ namespace CleanArchitecture.Server.Extensions.Authentication
 
         private async Task RemoveTokensByUserIdAsync(long userId)
         {
-            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.UserId == userId).ToArrayAsync();
-            _unitOfWork.Remove(bearerTokens);
+            var bearerTokens = await _appDbContext.Set<BearerToken>().Where(bt => bt.UserId == userId).ToArrayAsync();
+            _appDbContext.Remove(bearerTokens);
         }
 
         private async Task RemoveTokensWithSameRefreshTokenAsync(string refreshTokenHash)
@@ -271,15 +266,15 @@ namespace CleanArchitecture.Server.Extensions.Authentication
             if (refreshTokenHash == null)
                 throw new ArgumentNullException(nameof(refreshTokenHash));
 
-            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.RefreshTokenHash == refreshTokenHash).ToArrayAsync();
-            _unitOfWork.Remove(bearerTokens);
+            var bearerTokens = await _appDbContext.Set<BearerToken>().Where(bt => bt.RefreshTokenHash == refreshTokenHash).ToArrayAsync();
+            _appDbContext.Remove(bearerTokens);
         }
 
         private async Task RemoveExpiredTokensByUserIdAsync(long userId)
         {
             var now = DateTimeOffset.UtcNow;
-            var bearerTokens = await _unitOfWork.Query<BearerToken>().Where(bt => bt.UserId == userId && bt.RefreshTokenExpiresAt < now).ToArrayAsync();
-            _unitOfWork.Remove(bearerTokens);
+            var bearerTokens = await _appDbContext.Set<BearerToken>().Where(bt => bt.UserId == userId && bt.RefreshTokenExpiresAt < now).ToArrayAsync();
+            _appDbContext.Remove(bearerTokens);
         }
 
         public async Task<bool> ValidateTokenAsync(string accessToken, long userId)
@@ -288,7 +283,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 throw new ArgumentNullException(nameof(accessToken));
 
             var accessTokenHash = Algorithm.GenerateHash(accessToken);
-            var bearerToken = await _unitOfWork.Query<BearerToken>().FirstOrDefaultAsync(
+            var bearerToken = await _appDbContext.Set<BearerToken>().FirstOrDefaultAsync(
                 bt => bt.AccessTokenHash == accessTokenHash && bt.UserId == userId);
             return bearerToken?.AccessTokenExpiresAt >= DateTimeOffset.UtcNow;
         }

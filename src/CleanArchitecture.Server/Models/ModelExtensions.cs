@@ -1,15 +1,7 @@
-﻿using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Utilities;
+﻿using CleanArchitecture.Core.Utilities;
 using FluentValidation;
 using Humanizer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Server.Models
 {
@@ -24,13 +16,13 @@ namespace CleanArchitecture.Server.Models
         {
             ruleBuilder.Custom((value, context) =>
             {
-                var usernameType = ContactHelper.GetContactType(value);
+                var usernameType = ContactTypeHelper.GetContactType(value);
 
                 switch (usernameType)
                 {
                     case ContactType.EmailAddress:
                         {
-                            if (!ContactHelper.TryParseEmailAddress(value, out _))
+                            if (!ContactTypeHelper.TryParseEmailAddress(value, out _))
                             {
                                 context.AddFailure($"'{usernameType.Humanize()}' is not valid.");
                                 return;
@@ -40,7 +32,7 @@ namespace CleanArchitecture.Server.Models
 
                     case ContactType.PhoneNumber:
                         {
-                            if (!ContactHelper.TryParsePhoneNumber(value, out _))
+                            if (!ContactTypeHelper.TryParsePhoneNumber(value, out _))
                             {
                                 context.AddFailure($"'{usernameType.Humanize()}' is not valid.");
                                 return;

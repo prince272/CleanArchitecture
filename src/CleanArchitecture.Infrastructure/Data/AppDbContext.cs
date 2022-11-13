@@ -1,17 +1,11 @@
-﻿using CleanArchitecture.Core;
-using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Utilities;
+﻿using CleanArchitecture.Core.Utilities;
+using CleanArchitecture.Infrastructure.Entities;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Data
 {
@@ -36,6 +30,7 @@ namespace CleanArchitecture.Infrastructure.Data
 
             builder.ApplyEntitiesFromAssembly(typeof(IEntity).Assembly);
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            builder.AddJsonProperties();
         }
 
         // Entity Framework Core - setting the decimal precision and scale to all decimal properties [duplicate]
@@ -77,12 +72,17 @@ namespace CleanArchitecture.Infrastructure.Data
             }
         }
 
-        private static Type? GetPossibleValidatorType(object obj)
-        {
-            var validatorTypes = obj.GetType().Assembly.GetConstructibleTypes()
-                .Where(t => TypeHelper.IsAssignableToGenericType(t, typeof(AbstractValidator<>)));
+        static Type[] ValidatorTypes { get; set; }
 
-            var validatorType = validatorTypes.SingleOrDefault(t => t.BaseType != null && t.BaseType.GetGenericArguments()[0] == obj.GetType());
+        static AppDbContext()
+        {
+            ValidatorTypes = Assembly.GetExecutingAssembly().GetConstructibleTypes()
+          .Where(t => TypeHelper.IsAssignableToGenericType(t, typeof(AbstractValidator<>))).ToArray();
+        }
+
+        private static Type? GetPossibleValidatorType(object entity)
+        {
+            var validatorType = ValidatorTypes.SingleOrDefault(t => t.BaseType != null && t.BaseType.GetGenericArguments()[0] == entity.GetType());
             return validatorType;
         }
     }

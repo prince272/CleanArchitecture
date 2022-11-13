@@ -1,15 +1,8 @@
-﻿using CleanArchitecture.Core;
-using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core.Utilities;
+﻿using CleanArchitecture.Core.Utilities;
+using CleanArchitecture.Infrastructure.Entities;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 {
@@ -75,7 +68,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
                                nameof(PaymentProperties.MobileNumber), new[] { $"'{nameof(PaymentProperties.MobileNumber).Humanize()}' must not be empty." } } });
                 }
 
-                if (!ContactHelper.TryParsePhoneNumber(payment.MobileNumber, out var mobileDetails))
+                if (!ContactTypeHelper.TryParsePhoneNumber(payment.MobileNumber, out var mobileDetails))
                 {
                     return PaymentResult.Failed(new Dictionary<string, string[]>() { {
                                nameof(PaymentProperties.MobileNumber), new[] { $"'{nameof(PaymentProperties.MobileNumber).Humanize()}' is not valid." } } });

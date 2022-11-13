@@ -22,7 +22,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.BearerToken", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Address", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,14 +30,80 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
-                    b.Property<DateTimeOffset>("AccessTokenExpiresOn")
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Company")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CountryName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegionCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegionName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ZipCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Address");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.BearerToken", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<DateTimeOffset>("AccessTokenExpiresAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("AccessTokenHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTimeOffset>("RefreshTokenExpiresOn")
+                    b.Property<DateTimeOffset>("RefreshTokenExpiresAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("RefreshTokenHash")
@@ -54,7 +120,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.ToTable("BearerToken");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.Payment", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Payment", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -69,20 +135,20 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.Property<string>("CheckoutId")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTimeOffset?>("CompletedOn")
+                    b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset>("CreatedOn")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset?>("DeclinedOn")
+                    b.Property<DateTimeOffset?>("DeclinedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTimeOffset?>("ExpiredOn")
+                    b.Property<DateTimeOffset?>("ExpiredAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("ExtensionData")
@@ -115,7 +181,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.Property<string>("UAString")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTimeOffset?>("UpdatedOn")
+                    b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<long?>("UserId")
@@ -126,28 +192,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.ToTable("Payment");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.Product", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Product");
-                });
-
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.Role", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Role", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -177,7 +222,138 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.ToTable("Role", (string)null);
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.User", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Store.Cart", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Stored")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Cart");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Store.Order", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<string>("BillingAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DeliveryAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TrackingCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Order");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Store.Product", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("OldPrice")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Product");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.User", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -233,7 +409,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<DateTimeOffset>("RegisteredOn")
+                    b.Property<DateTimeOffset>("RegisteredAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("SecurityStamp")
@@ -259,7 +435,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.ToTable("User", (string)null);
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.UserRole", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.UserRole", b =>
                 {
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");
@@ -362,9 +538,9 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.ToTable("UserToken", (string)null);
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.BearerToken", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.BearerToken", b =>
                 {
-                    b.HasOne("CleanArchitecture.Core.Entities.User", "User")
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -373,9 +549,9 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.Payment", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Payment", b =>
                 {
-                    b.OwnsOne("CleanArchitecture.Core.Entities.PaymentIssuer", "MobileIssuer", b1 =>
+                    b.OwnsOne("CleanArchitecture.Infrastructure.Entities.PaymentIssuer", "MobileIssuer", b1 =>
                         {
                             b1.Property<long>("PaymentId")
                                 .HasColumnType("bigint");
@@ -403,12 +579,123 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                     b.Navigation("MobileIssuer");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.Product", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Store.Cart", b =>
                 {
-                    b.OwnsOne("CleanArchitecture.Core.Entities.Media", "Image", b1 =>
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.Store.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Store.Order", b =>
+                {
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsMany("CleanArchitecture.Infrastructure.Entities.Store.OrderItem", "Items", b1 =>
+                        {
+                            b1.Property<long>("OrderId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
+
+                            b1.Property<decimal>("Price")
+                                .HasPrecision(18, 6)
+                                .HasColumnType("decimal(18,6)");
+
+                            b1.Property<long>("ProductId")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("ProductName")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<int>("Quantity")
+                                .HasColumnType("int");
+
+                            b1.HasKey("OrderId", "Id");
+
+                            b1.ToTable("OrderItem");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrderId");
+
+                            b1.OwnsOne("CleanArchitecture.Infrastructure.Entities.Media", "Image", b2 =>
+                                {
+                                    b2.Property<long>("OrderItemOrderId")
+                                        .HasColumnType("bigint");
+
+                                    b2.Property<int>("OrderItemId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<DateTimeOffset>("CreatedAt")
+                                        .HasColumnType("datetimeoffset");
+
+                                    b2.Property<int?>("Height")
+                                        .HasColumnType("int");
+
+                                    b2.Property<string>("MimeType")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Name")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Path")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<long>("Size")
+                                        .HasColumnType("bigint");
+
+                                    b2.Property<int>("Type")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int?>("Width")
+                                        .HasColumnType("int");
+
+                                    b2.HasKey("OrderItemOrderId", "OrderItemId");
+
+                                    b2.ToTable("OrderItem");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OrderItemOrderId", "OrderItemId");
+                                });
+
+                            b1.Navigation("Image");
+                        });
+
+                    b.Navigation("Items");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Store.Product", b =>
+                {
+                    b.OwnsMany("CleanArchitecture.Infrastructure.Entities.Media", "Images", b1 =>
                         {
                             b1.Property<long>("ProductId")
                                 .HasColumnType("bigint");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"), 1L, 1);
+
+                            b1.Property<DateTimeOffset>("CreatedAt")
+                                .HasColumnType("datetimeoffset");
 
                             b1.Property<int?>("Height")
                                 .HasColumnType("int");
@@ -434,27 +721,26 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
                             b1.Property<int?>("Width")
                                 .HasColumnType("int");
 
-                            b1.HasKey("ProductId");
+                            b1.HasKey("ProductId", "Id");
 
-                            b1.ToTable("Product");
+                            b1.ToTable("Product_Images");
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId");
                         });
 
-                    b.Navigation("Image")
-                        .IsRequired();
+                    b.Navigation("Images");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.UserRole", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.UserRole", b =>
                 {
-                    b.HasOne("CleanArchitecture.Core.Entities.Role", "Role")
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CleanArchitecture.Core.Entities.User", "User")
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -467,7 +753,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b =>
                 {
-                    b.HasOne("CleanArchitecture.Core.Entities.Role", null)
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -476,7 +762,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<long>", b =>
                 {
-                    b.HasOne("CleanArchitecture.Core.Entities.User", null)
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -485,7 +771,7 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<long>", b =>
                 {
-                    b.HasOne("CleanArchitecture.Core.Entities.User", null)
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -494,19 +780,19 @@ namespace CleanArchitecture.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<long>", b =>
                 {
-                    b.HasOne("CleanArchitecture.Core.Entities.User", null)
+                    b.HasOne("CleanArchitecture.Infrastructure.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.Role", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.Role", b =>
                 {
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Core.Entities.User", b =>
+            modelBuilder.Entity("CleanArchitecture.Infrastructure.Entities.User", b =>
                 {
                     b.Navigation("UserRoles");
                 });

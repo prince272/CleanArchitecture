@@ -1,14 +1,9 @@
-﻿using CleanArchitecture.Core.Entities;
-using CleanArchitecture.Core;
+﻿using CleanArchitecture.Infrastructure.Data;
+using CleanArchitecture.Infrastructure.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
 {
@@ -44,12 +39,12 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
             while (!cancellationToken.IsCancellationRequested)
             {
                 using var scope = _serviceProvider.CreateScope();
-                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var paymentProvider = scope.ServiceProvider.GetRequiredService<IPaymentProvider>();
 
                 try
                 {
-                    var payemnts = await unitOfWork.Query<Payment>().Where(_ => _.Status == PaymentStatus.Pending || _.Status == PaymentStatus.Processing).ToListAsync(cancellationToken);
+                    var payemnts = await appDbContext.Set<Payment>().Where(_ => _.Status == PaymentStatus.Pending || _.Status == PaymentStatus.Processing).ToListAsync(cancellationToken);
 
                     foreach (var payemnt in payemnts)
                     {
@@ -57,7 +52,7 @@ namespace CleanArchitecture.Infrastructure.Extensions.PaymentProvider
                         {
                             await paymentProvider.VerifyAsync(payemnt, cancellationToken);
                         }
-                        catch(Exception exception)
+                        catch (Exception exception)
                         {
                             if (previousExceptionMessage == null || exception.Message != previousExceptionMessage)
                             {
