@@ -4,29 +4,35 @@ using CleanArchitecture.Core.Utilities;
 using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Infrastructure.Entities.Store;
 using CleanArchitecture.Infrastructure.Services.Store;
+using CleanArchitecture.Server.Models;
 using CleanArchitecture.Server.Models.Store.Products;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Linq;
 
 namespace CleanArchitecture.Server.Controllers.Store
 {
     public class ProductsController : ApiController
     {
         private readonly AppDbContext _appDbContext;
+        private readonly AppSettings _appSettings;
         private readonly ProductService _productService;
         private readonly CartService _cartService;
         private readonly IMapper _mapper;
 
-        public ProductsController(AppDbContext appDbContext, ProductService productService, CartService cartService, IMapper mapper)
+        public ProductsController(AppDbContext appDbContext, IOptions<AppSettings> appSettings, ProductService productService, CartService cartService, IMapper mapper)
         {
             _appDbContext = appDbContext ?? throw new ArgumentNullException(nameof(appDbContext));
+            _appSettings = appSettings.Value ?? throw new ArgumentNullException(nameof(_appSettings));
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _cartService = cartService ?? throw new ArgumentNullException(nameof(cartService));
             _mapper = mapper;
         }
 
         [HttpPost("products")]
-        public async Task<IActionResult> Create(CreateProductForm form)
+        public async Task<IActionResult> Add(EditProductForm form)
         {
             var product = _mapper.Map(form, new Product());
 
@@ -39,7 +45,7 @@ namespace CleanArchitecture.Server.Controllers.Store
         }
 
         [HttpPut("products/{productId}")]
-        public async Task<IActionResult> Update(string productId, CreateProductForm form)
+        public async Task<IActionResult> Edit(string productId, EditProductForm form)
         {
             var product = await _productService.GetProductAsync(productId);
             if (product == null)
@@ -77,12 +83,18 @@ namespace CleanArchitecture.Server.Controllers.Store
         }
 
         [HttpGet("products")]
-        public async Task<IActionResult> Get(string[]? productIds, int pageNumber, int pageSize, decimal? minPrice, decimal? maxPrice)
+        public async Task<IActionResult> Get(int page, int pageSize)
         {
             var query = _appDbContext.Set<Product>().AsQueryable();
-            var model = new PageModel(await query.LongCountAsync(), pageNumber, pageSize);
-            model.Items = await _mapper.ProjectTo<ProductModel>(((model.SkippedItems > 0 ? query.Skip(model.SkippedItems) : query).Take(model.PageSize)))
-                .ToArrayAsync();
+
+            page = Math.Min(Math.Max(1, page), _appSettings.SharedSettings.PageLimit);
+            pageSize = Math.Min(Math.Max(1, pageSize), _appSettings.SharedSettings.PageLimit);
+
+            var model = new PageModel<ProductModel>(
+                items: await _mapper.ProjectTo<ProductModel>(query.Skip((page - 1) * pageSize).Take(pageSize)).ToArrayAsync(),
+                totalItems: await query.LongCountAsync(),
+                page, pageSize);
+      
             return Ok(model);
         }
 

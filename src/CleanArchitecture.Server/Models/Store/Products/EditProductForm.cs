@@ -4,7 +4,7 @@ using CleanArchitecture.Infrastructure.Entities.Store;
 
 namespace CleanArchitecture.Server.Models.Store.Products
 {
-    public class CreateProductForm
+    public class EditProductForm
     {
         public string Name { get; set; } = null!;
 
@@ -19,11 +19,11 @@ namespace CleanArchitecture.Server.Models.Store.Products
         public string Description { get; set; } = null!;
     }
 
-    public class CreateProductProfile : Profile
+    public class EditProductProfile : Profile
     {
-        public CreateProductProfile()
+        public EditProductProfile()
         {
-            CreateMap<CreateProductForm, Product>();
+            CreateMap<EditProductForm, Product>();
         }
     }
 }

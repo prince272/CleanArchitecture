@@ -1,40 +1,22 @@
 ﻿namespace CleanArchitecture.Server.Models
 {
-    public class PageResult
+    public class PageModel<TModel>
     {
-        public PageResult(int totalItems, int pageNumber, int pageSize, int maxPageSize = 12)
+        public PageModel(TModel[] items, long totalItems, int page, int pageSize, int pageLimit = 10)
         {
-            if (pageNumber == 0) pageNumber = 1;
-            if (pageSize == 0) pageSize = maxPageSize;
-
-            // Ensure the total pages isn't out of range.
-            var totalPages = Math.Max((int)Math.Ceiling(totalItems / (decimal)pageSize), 1);
-
-            // Ensure the current page isn't out of range.
-            pageNumber = Math.Min(Math.Max(1, pageNumber), totalPages);
-
-            // Ensure the page size isn't out of range.
-            pageSize = Math.Min(Math.Max(1, pageSize), maxPageSize);
-
-            var skippedItems = (pageNumber - 1) * pageSize;
-
-            PageNumber = pageNumber;
-            PageSize = pageSize;
-            SkipItems = skippedItems;
-            TotalPages = totalPages;
+            TotalPages = Math.Max((int)Math.Ceiling(totalItems / (decimal)pageSize), 1);
+            Items = items;
             TotalItems = totalItems;
+            Page = page;
+            PageSize = pageSize;
+            PageLimit = pageLimit;
         }
 
-        public int PageNumber { get; }
-
-        public int PageSize { get; }
-
+        public TModel[] Items { get; }
+        public long TotalItems { get; }
         public int TotalPages { get; }
-
-        public int TotalItems { get; }
-
-        public int SkipItems { get; }
-
-        public object Items { get; set; }
+        public int Page { get; }
+        public int PageSize { get; }
+        public int PageLimit { get; }
     }
 }

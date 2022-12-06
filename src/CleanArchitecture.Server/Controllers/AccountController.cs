@@ -60,11 +60,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/register")]
-        public async Task<IActionResult> RegisterAccount([FromBody] CreateAccountForm form)
+        public async Task<IActionResult> RegisterAccount([FromBody] CreateAccountForm form, [FromServices] CreateAccountValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<CreateAccountValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             var user = await _userManager.FindByUsernameAsync(form.Username);
@@ -109,11 +109,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/verify/send")]
-        public async Task<IActionResult> SendVerifyAccount([FromBody] SendVerifyAccountForm form)
+        public async Task<IActionResult> SendVerifyAccount([FromBody] SendVerifyAccountForm form, [FromServices] SendVerifyAccountValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<SendVerifyAccountValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             User? user = null;
@@ -189,11 +189,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/verify")]
-        public async Task<IActionResult> VerifyAccount([FromBody] VerifyAccountForm form)
+        public async Task<IActionResult> VerifyAccount([FromBody] VerifyAccountForm form, [FromBody] VerifyAccountValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<VerifyAccountValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             User? user = null;
@@ -252,11 +252,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/password/reset/send")]
-        public async Task<IActionResult> SendResetPassword([FromBody] SendResetPasswordForm form)
+        public async Task<IActionResult> SendResetPassword([FromBody] SendResetPasswordForm form, [FromServices] SendResetPasswordValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<SendResetPasswordValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             var user = await _userManager.FindByUsernameAsync(form.Username);
@@ -309,11 +309,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/password/reset/verify")]
-        public async Task<IActionResult> VerifyResetPassword([FromBody] VerifyResetPasswordForm form)
+        public async Task<IActionResult> VerifyResetPassword([FromBody] VerifyResetPasswordForm form, [FromServices] VerifyResetPasswordValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<VerifyResetPasswordValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             var user = await _userManager.FindByUsernameAsync(form.Username);
@@ -336,11 +336,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/password/reset")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordForm form)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordForm form, [FromServices] ResetPasswordValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<ResetPasswordValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             var user = await _userManager.FindByUsernameAsync(form.Username);
@@ -368,11 +368,11 @@ namespace CleanArchitecture.Server.Controllers
 
         [Authorize]
         [HttpPost("account/password/change")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordForm form)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordForm form, [FromServices] ChangePasswordValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<ChangePasswordValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             var currentUser = await _userManager.GetUserAsync(User);
@@ -412,11 +412,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/token/generate")]
-        public async Task<IActionResult> GenerateToken([FromBody] CreateAccountTokenForm form)
+        public async Task<IActionResult> GenerateToken([FromBody] CreateAccountTokenForm form, [FromServices] CreateAccountTokenValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<CreateAccountTokenValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             var user = await _userManager.FindByUsernameAsync(form.Username);
@@ -441,7 +441,7 @@ namespace CleanArchitecture.Server.Controllers
                 errors.Add(() => form.Username, $"'{ContactTypeHelper.GetContactType(form.Username).Humanize()}' is not confirmed.");
                 return ValidationProblem(errors, extensions: new Dictionary<string, object?>()
                 {
-                    ["Reason"] = SignInReason.RequiresVerification,
+                    ["Action"] = AccountAction.ConfirmAccount,
                 });
             }
 
@@ -523,11 +523,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/token/refresh")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshAccountTokenForm form)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshAccountTokenForm form, [FromServices] RefreshAccountTokenValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
 
@@ -546,11 +546,11 @@ namespace CleanArchitecture.Server.Controllers
         }
 
         [HttpPost("account/token/revoke")]
-        public async Task<IActionResult> RevokeToken([FromBody] RefreshAccountTokenForm form)
+        public async Task<IActionResult> RevokeToken([FromBody] RefreshAccountTokenForm form, [FromServices] RefreshAccountTokenValidator formValidator)
         {
             if (form == null) throw new ArgumentNullException(nameof(form));
 
-            var formState = await HttpContext.RequestServices.GetRequiredService<RefreshAccountTokenValidator>().ValidateAsync(form);
+            var formState = await formValidator.ValidateAsync(form);
             if (formState.Errors.Any()) return ValidationProblem(formState.ToDictionary());
 
             var token = await _bearerTokenProvider.FindTokenAsync(form.RefreshToken);

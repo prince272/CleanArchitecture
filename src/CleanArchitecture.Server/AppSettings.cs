@@ -8,6 +8,8 @@ namespace CleanArchitecture.Server
         public MailSettings MailSettings { get; set; } = null!;
 
         public MediaSettings MediaSettings { get; set; } = null!;
+
+        public SharedSettings SharedSettings { get; set; } = null!;
     }
 
     public class MailSettings
@@ -31,5 +33,10 @@ namespace CleanArchitecture.Server
 
             public MediaType MediaType { get; set; }
         }
+    }
+
+    public class SharedSettings
+    {
+        public int PageLimit { get; set; }
     }
 }

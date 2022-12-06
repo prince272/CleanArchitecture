@@ -11,11 +11,11 @@ namespace CleanArchitecture.Server.Utilities
     /// Based on Microsoft's DefaultProblemDeatilsFactory
     /// https://github.com/aspnet/AspNetCore/blob/2e4274cb67c049055e321c18cc9e64562da52dcf/src/Mvc/Mvc.Core/src/Infrastructure/DefaultProblemDetailsFactory.cs
     /// </summary>
-    public sealed class AppProblemDetailsFactory : ProblemDetailsFactory
+    public sealed class HttpProblemDetailsFactory : ProblemDetailsFactory
     {
         private readonly ApiBehaviorOptions _options;
 
-        public AppProblemDetailsFactory(IOptions<ApiBehaviorOptions> options)
+        public HttpProblemDetailsFactory(IOptions<ApiBehaviorOptions> options)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }

@@ -219,11 +219,11 @@ builder.Services.AddLocalFileStorage(options =>
 builder.Services.AddPaymentProvider()
                 .AddPaySwitchProcessor(options =>
                 {
-                    options.ClientId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientId");
-                    options.ClientSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:ClientSecret");
+                    options.ClientId = builder.Configuration.GetValue<string>("PaymentSettings:PaySwitch:ClientId");
+                    options.ClientSecret = builder.Configuration.GetValue<string>("PaymentSettings:PaySwitch:ClientSecret");
 
-                    options.MerchantId = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantId");
-                    options.MerchantSecret = builder.Configuration.GetValue<string>("PaymentProviders:PaySwitch:MerchantSecret");
+                    options.MerchantId = builder.Configuration.GetValue<string>("PaymentSettings:PaySwitch:MerchantId");
+                    options.MerchantSecret = builder.Configuration.GetValue<string>("PaymentSettings:PaySwitch:MerchantSecret");
                 });
 
 builder.Services.AddResponseCompression();
@@ -246,7 +246,7 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
-builder.Services.AddTransient<ProblemDetailsFactory, AppProblemDetailsFactory>();
+builder.Services.AddTransient<ProblemDetailsFactory, HttpProblemDetailsFactory>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

@@ -1,7 +1,7 @@
 ﻿namespace CleanArchitecture.Server.Models.Account
 {
-    public enum SignInReason
+    public enum AccountAction
     {
-        RequiresVerification
+        ConfirmAccount
     }
 }

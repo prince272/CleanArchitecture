@@ -258,7 +258,7 @@ namespace CleanArchitecture.Server.Extensions.Authentication
         private async Task RemoveTokensByUserIdAsync(long userId)
         {
             var bearerTokens = await _appDbContext.Set<BearerToken>().Where(bt => bt.UserId == userId).ToArrayAsync();
-            _appDbContext.Remove(bearerTokens);
+            if (bearerTokens.Any()) _appDbContext.Remove(bearerTokens);
         }
 
         private async Task RemoveTokensWithSameRefreshTokenAsync(string refreshTokenHash)
@@ -267,14 +267,14 @@ namespace CleanArchitecture.Server.Extensions.Authentication
                 throw new ArgumentNullException(nameof(refreshTokenHash));
 
             var bearerTokens = await _appDbContext.Set<BearerToken>().Where(bt => bt.RefreshTokenHash == refreshTokenHash).ToArrayAsync();
-            _appDbContext.Remove(bearerTokens);
+            if (bearerTokens.Any()) _appDbContext.Remove(bearerTokens);
         }
 
         private async Task RemoveExpiredTokensByUserIdAsync(long userId)
         {
             var now = DateTimeOffset.UtcNow;
             var bearerTokens = await _appDbContext.Set<BearerToken>().Where(bt => bt.UserId == userId && bt.RefreshTokenExpiresAt < now).ToArrayAsync();
-            _appDbContext.Remove(bearerTokens);
+            if (bearerTokens.Any()) _appDbContext.Remove(bearerTokens);
         }
 
         public async Task<bool> ValidateTokenAsync(string accessToken, long userId)

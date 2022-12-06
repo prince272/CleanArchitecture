@@ -50,7 +50,7 @@ namespace CleanArchitecture.Server.Controllers
         string? type = null,
         IDictionary<string, object?>? extensions = null)
         {
-            var problemDetailsFactory = (AppProblemDetailsFactory)HttpContext.RequestServices.GetServices<ProblemDetailsFactory>().First(_ => _.GetType() == typeof(AppProblemDetailsFactory));
+            var problemDetailsFactory = (HttpProblemDetailsFactory)HttpContext.RequestServices.GetServices<ProblemDetailsFactory>().First(_ => _.GetType() == typeof(HttpProblemDetailsFactory));
             return ValidationProblem(problemDetailsFactory.CreateValidationProblemDetails(HttpContext, errors, statusCode, title, type, detail, instance, extensions));
         }
     }
